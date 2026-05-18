@@ -1,7 +1,7 @@
 {
-  "name": "Calculadora Científica Educativa Plus v19",
-  "short_name": "Calc ESO+",
-  "description": "PWA educativa en català amb funcionament offline reforçat, matemàtiques, física, química, gràfiques, CAS parcial i geometria analítica.",
+  "name": "Calculadora Científica Educativa v21",
+  "short_name": "Calc Educativa",
+  "description": "PWA educativa en català amb matemàtiques, física, química, gràfiques, CAS parcial, taula periòdica completa i funcionament offline reforçat.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
@@ -11,13 +11,13 @@
   "lang": "ca",
   "icons": [
     {
-      "src": "icons/icon-192.png",
+      "src": "icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icons/icon-512.png",
+      "src": "icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

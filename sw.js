@@ -1,14 +1,14 @@
 "use strict";
 
-const CACHE_NAME = "calculadora-educativa-plus-v19";
+const CACHE_NAME = "calculadora-educativa-plus-v21";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
   "./manifest.json",
-  "./icons/icon-192.png",
-  "./icons/icon-512.png"
+  "./icon-192.png",
+  "./icon-512.png"
 ];
 
 self.addEventListener("install", event => {

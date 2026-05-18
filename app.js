@@ -379,13 +379,35 @@ const GAS_R = 0.082057;
 const AVOGADRO = 6.022e23;
 const ATOMIC_MASS = {H:1.008,C:12.011,N:14.007,O:15.999,Na:22.990,Mg:24.305,Al:26.982,Si:28.085,P:30.974,S:32.06,Cl:35.45,K:39.098,Ca:40.078,Fe:55.845,Cu:63.546,Zn:65.38,Br:79.904,I:126.904};
 const physicsTemplates = {
-  mru:`<label>Δx (m)<input type="number" id="ph-a" value="100" step="any"></label><label>Δt (s)<input type="number" id="ph-b" value="20" step="any"></label>`,
-  "mrua-velocity":`<label>v₀ (m/s)<input type="number" id="ph-a" value="3" step="any"></label><label>a (m/s²)<input type="number" id="ph-b" value="2" step="any"></label><label>t (s)<input type="number" id="ph-c" value="5" step="any"></label>`,
-  newton:`<label>m (kg)<input type="number" id="ph-a" value="10" step="any"></label><label>a (m/s²)<input type="number" id="ph-b" value="2" step="any"></label>`,
-  kinetic:`<label>m (kg)<input type="number" id="ph-a" value="2" step="any"></label><label>v (m/s)<input type="number" id="ph-b" value="10" step="any"></label>`,
-  ohm:`<label>I (A)<input type="number" id="ph-a" value="2" step="any"></label><label>R (Ω)<input type="number" id="ph-b" value="5" step="any"></label>`,
-  heat:`<label>m (kg)<input type="number" id="ph-a" value="1" step="any"></label><label>c (J/kg·K)<input type="number" id="ph-b" value="4180" step="any"></label><label>ΔT<input type="number" id="ph-c" value="10" step="any"></label>`,
-  "ideal-gas":`<label>P (atm)<input type="number" id="ph-a" value="1" step="any"></label><label>V (L)<input type="number" id="ph-b" value="22.4" step="any"></label><label>n (mol)<input type="number" id="ph-c" value="1" step="any"></label>`
+  mru: `<label>Desplaçament Δx (m)<input type="number" id="ph-a" value="100" step="any"></label><label>Temps Δt (s)<input type="number" id="ph-b" value="20" step="any"></label>`,
+  "mrua-velocity": `<label>Velocitat inicial v₀ (m/s)<input type="number" id="ph-a" value="3" step="any"></label><label>Acceleració a (m/s²)<input type="number" id="ph-b" value="2" step="any"></label><label>Temps t (s)<input type="number" id="ph-c" value="5" step="any"></label>`,
+  "mrua-position": `<label>Posició inicial x₀ (m)<input type="number" id="ph-a" value="0" step="any"></label><label>Velocitat inicial v₀ (m/s)<input type="number" id="ph-b" value="3" step="any"></label><label>Acceleració a (m/s²)<input type="number" id="ph-c" value="2" step="any"></label><label>Temps t (s)<input type="number" id="ph-d" value="5" step="any"></label>`,
+  newton: `<label>Massa m (kg)<input type="number" id="ph-a" value="10" step="any"></label><label>Acceleració a (m/s²)<input type="number" id="ph-b" value="2" step="any"></label>`,
+  weight: `<label>Massa m (kg)<input type="number" id="ph-a" value="60" step="any"></label><label>Gravetat g (m/s²)<input type="number" id="ph-b" value="9.81" step="any"></label>`,
+  momentum: `<label>Massa m (kg)<input type="number" id="ph-a" value="2" step="any"></label><label>Velocitat v (m/s)<input type="number" id="ph-b" value="5" step="any"></label>`,
+  impulse: `<label>Força F (N)<input type="number" id="ph-a" value="10" step="any"></label><label>Temps Δt (s)<input type="number" id="ph-b" value="3" step="any"></label>`,
+  centripetal: `<label>Massa m (kg)<input type="number" id="ph-a" value="2" step="any"></label><label>Velocitat v (m/s)<input type="number" id="ph-b" value="4" step="any"></label><label>Radi r (m)<input type="number" id="ph-c" value="1.5" step="any"></label>`,
+  work: `<label>Força F (N)<input type="number" id="ph-a" value="20" step="any"></label><label>Desplaçament d (m)<input type="number" id="ph-b" value="5" step="any"></label><label>Angle θ (graus)<input type="number" id="ph-c" value="0" step="any"></label>`,
+  power: `<label>Treball W (J)<input type="number" id="ph-a" value="500" step="any"></label><label>Temps t (s)<input type="number" id="ph-b" value="10" step="any"></label>`,
+  kinetic: `<label>Massa m (kg)<input type="number" id="ph-a" value="2" step="any"></label><label>Velocitat v (m/s)<input type="number" id="ph-b" value="10" step="any"></label>`,
+  potential: `<label>Massa m (kg)<input type="number" id="ph-a" value="2" step="any"></label><label>Gravetat g (m/s²)<input type="number" id="ph-b" value="9.81" step="any"></label><label>Altura h (m)<input type="number" id="ph-c" value="5" step="any"></label>`,
+  spring: `<label>Constant elàstica k (N/m)<input type="number" id="ph-a" value="100" step="any"></label><label>Deformació x (m)<input type="number" id="ph-b" value="0.2" step="any"></label>`,
+  mechanical: `<label>Energia cinètica Ec (J)<input type="number" id="ph-a" value="100" step="any"></label><label>Energia potencial Ep (J)<input type="number" id="ph-b" value="50" step="any"></label>`,
+  density: `<label>Massa m (kg)<input type="number" id="ph-a" value="10" step="any"></label><label>Volum V (m³)<input type="number" id="ph-b" value="2" step="any"></label>`,
+  pressure: `<label>Força F (N)<input type="number" id="ph-a" value="100" step="any"></label><label>Superfície S (m²)<input type="number" id="ph-b" value="0.5" step="any"></label>`,
+  hydrostatic: `<label>Densitat ρ (kg/m³)<input type="number" id="ph-a" value="1000" step="any"></label><label>Gravetat g (m/s²)<input type="number" id="ph-b" value="9.81" step="any"></label><label>Profunditat h (m)<input type="number" id="ph-c" value="2" step="any"></label>`,
+  buoyancy: `<label>Densitat del fluid ρ (kg/m³)<input type="number" id="ph-a" value="1000" step="any"></label><label>Gravetat g (m/s²)<input type="number" id="ph-b" value="9.81" step="any"></label><label>Volum desplaçat V (m³)<input type="number" id="ph-c" value="0.01" step="any"></label>`,
+  wave: `<label>Longitud d’ona λ (m)<input type="number" id="ph-a" value="2" step="any"></label><label>Freqüència f (Hz)<input type="number" id="ph-b" value="5" step="any"></label>`,
+  period: `<label>Freqüència f (Hz)<input type="number" id="ph-a" value="50" step="any"></label>`,
+  lens: `<label>Distància focal f (cm)<input type="number" id="ph-a" value="10" step="any"></label><label>Distància objecte do (cm)<input type="number" id="ph-b" value="30" step="any"></label>`,
+  ohm: `<label>Intensitat I (A)<input type="number" id="ph-a" value="2" step="any"></label><label>Resistència R (Ω)<input type="number" id="ph-b" value="5" step="any"></label>`,
+  "electric-power": `<label>Tensió V (V)<input type="number" id="ph-a" value="230" step="any"></label><label>Intensitat I (A)<input type="number" id="ph-b" value="2" step="any"></label>`,
+  "resistance-series": `<label>Resistències en Ω separades per comes<input id="ph-list" value="10,20,30"></label>`,
+  "resistance-parallel": `<label>Resistències en Ω separades per comes<input id="ph-list" value="10,20,30"></label>`,
+  coulomb: `<label>Càrrega q₁ (C)<input type="number" id="ph-a" value="0.000001" step="any"></label><label>Càrrega q₂ (C)<input type="number" id="ph-b" value="0.000002" step="any"></label><label>Distància r (m)<input type="number" id="ph-c" value="0.1" step="any"></label>`,
+  heat: `<label>Massa m (kg)<input type="number" id="ph-a" value="1" step="any"></label><label>Calor específica c (J/kg·K)<input type="number" id="ph-b" value="4180" step="any"></label><label>Canvi de temperatura ΔT (K o °C)<input type="number" id="ph-c" value="10" step="any"></label>`,
+  phase: `<label>Massa m (kg)<input type="number" id="ph-a" value="0.5" step="any"></label><label>Calor latent L (J/kg)<input type="number" id="ph-b" value="334000" step="any"></label>`,
+  "ideal-gas": `<label>Pressió P (atm)<input type="number" id="ph-a" value="1" step="any"></label><label>Volum V (L)<input type="number" id="ph-b" value="22.4" step="any"></label><label>Mols n (mol)<input type="number" id="ph-c" value="1" step="any"></label>`
 };
 function updatePhysicsInputs(){ if($("physics-inputs")) $("physics-inputs").innerHTML = physicsTemplates[$("physics-type").value]; }
 if($("physics-type")) $("physics-type").addEventListener("change", updatePhysicsInputs);
@@ -449,39 +471,131 @@ if($("chemistry-form")) $("chemistry-form").addEventListener("submit", event => 
 
 /* V7: periodic table and study mode */
 const PERIODIC_ELEMENTS_V7 = [
-  {n:1,s:"H",name:"Hidrogen",mass:1.008,group:"No metall",use:"Aigua, àcids, combustibles i química orgànica."},
-  {n:2,s:"He",name:"Heli",mass:4.003,group:"Gas noble",use:"Globus, criogènia i atmosferes inertes."},
-  {n:3,s:"Li",name:"Liti",mass:6.94,group:"Metall alcalí",use:"Bateries i aliatges lleugers."},
-  {n:4,s:"Be",name:"Beril·li",mass:9.012,group:"Metall alcalinoterri",use:"Aliatges especials."},
-  {n:5,s:"B",name:"Bor",mass:10.81,group:"Semimetall",use:"Vidres borosilicats i detergents."},
-  {n:6,s:"C",name:"Carboni",mass:12.011,group:"No metall",use:"Base de la química orgànica."},
-  {n:7,s:"N",name:"Nitrogen",mass:14.007,group:"No metall",use:"Aire, proteïnes i fertilitzants."},
-  {n:8,s:"O",name:"Oxigen",mass:15.999,group:"No metall",use:"Respiració, combustió i òxids."},
-  {n:9,s:"F",name:"Fluor",mass:18.998,group:"Halogen",use:"Fluorurs i materials especials."},
-  {n:10,s:"Ne",name:"Neó",mass:20.180,group:"Gas noble",use:"Rètols lluminosos."},
-  {n:11,s:"Na",name:"Sodi",mass:22.990,group:"Metall alcalí",use:"Sal comuna i reaccions iòniques."},
-  {n:12,s:"Mg",name:"Magnesi",mass:24.305,group:"Metall alcalinoterri",use:"Aliatges i focs artificials."},
-  {n:13,s:"Al",name:"Alumini",mass:26.982,group:"Metall",use:"Envasos, construcció i transport."},
-  {n:14,s:"Si",name:"Silici",mass:28.085,group:"Semimetall",use:"Vidre, ceràmica i electrònica."},
-  {n:15,s:"P",name:"Fòsfor",mass:30.974,group:"No metall",use:"ADN, fertilitzants i fosfats."},
-  {n:16,s:"S",name:"Sofre",mass:32.06,group:"No metall",use:"Sulfats, vulcanització i àcid sulfúric."},
-  {n:17,s:"Cl",name:"Clor",mass:35.45,group:"Halogen",use:"Sal, desinfecció i clorurs."},
-  {n:18,s:"Ar",name:"Argó",mass:39.948,group:"Gas noble",use:"Bombetes i atmosferes inertes."},
-  {n:19,s:"K",name:"Potassi",mass:39.098,group:"Metall alcalí",use:"Fertilitzants i equilibri cel·lular."},
-  {n:20,s:"Ca",name:"Calci",mass:40.078,group:"Metall alcalinoterri",use:"Ossos, calcàries i ciments."},
-  {n:26,s:"Fe",name:"Ferro",mass:55.845,group:"Metall de transició",use:"Acer, estructures i hemoglobina."},
-  {n:29,s:"Cu",name:"Coure",mass:63.546,group:"Metall de transició",use:"Cables elèctrics i aliatges."},
-  {n:30,s:"Zn",name:"Zinc",mass:65.38,group:"Metall de transició",use:"Galvanitzat i aliatges."},
-  {n:35,s:"Br",name:"Brom",mass:79.904,group:"Halogen",use:"Sals bromur i química orgànica."},
-  {n:47,s:"Ag",name:"Plata",mass:107.868,group:"Metall de transició",use:"Joieria, fotografia i conductivitat."},
-  {n:53,s:"I",name:"Iode",mass:126.904,group:"Halogen",use:"Tiroides, antisèptics i iodurs."},
-  {n:56,s:"Ba",name:"Bari",mass:137.327,group:"Metall alcalinoterri",use:"Contrasts radiològics i sals."},
-  {n:82,s:"Pb",name:"Plom",mass:207.2,group:"Metall",use:"Bateries i protecció radiològica."}
+  {n:1,s:"H",name:"Hidrogen",mass:1.008,group:"No metall",use:"Element de la taula periòdica completa."},
+  {n:2,s:"He",name:"Heli",mass:4.0026,group:"Gas noble",use:"Element de la taula periòdica completa."},
+  {n:3,s:"Li",name:"Liti",mass:6.94,group:"Metall alcalí",use:"Element de la taula periòdica completa."},
+  {n:4,s:"Be",name:"Beril·li",mass:9.0122,group:"Metall alcalinoterri",use:"Element de la taula periòdica completa."},
+  {n:5,s:"B",name:"Bor",mass:10.81,group:"Semimetall",use:"Element de la taula periòdica completa."},
+  {n:6,s:"C",name:"Carboni",mass:12.011,group:"No metall",use:"Element de la taula periòdica completa."},
+  {n:7,s:"N",name:"Nitrogen",mass:14.007,group:"No metall",use:"Element de la taula periòdica completa."},
+  {n:8,s:"O",name:"Oxigen",mass:15.999,group:"No metall",use:"Element de la taula periòdica completa."},
+  {n:9,s:"F",name:"Fluor",mass:18.998,group:"Halogen",use:"Element de la taula periòdica completa."},
+  {n:10,s:"Ne",name:"Neó",mass:20.18,group:"Gas noble",use:"Element de la taula periòdica completa."},
+  {n:11,s:"Na",name:"Sodi",mass:22.99,group:"Metall alcalí",use:"Element de la taula periòdica completa."},
+  {n:12,s:"Mg",name:"Magnesi",mass:24.305,group:"Metall alcalinoterri",use:"Element de la taula periòdica completa."},
+  {n:13,s:"Al",name:"Alumini",mass:26.982,group:"Metall",use:"Element de la taula periòdica completa."},
+  {n:14,s:"Si",name:"Silici",mass:28.085,group:"Semimetall",use:"Element de la taula periòdica completa."},
+  {n:15,s:"P",name:"Fòsfor",mass:30.974,group:"No metall",use:"Element de la taula periòdica completa."},
+  {n:16,s:"S",name:"Sofre",mass:32.06,group:"No metall",use:"Element de la taula periòdica completa."},
+  {n:17,s:"Cl",name:"Clor",mass:35.45,group:"Halogen",use:"Element de la taula periòdica completa."},
+  {n:18,s:"Ar",name:"Argó",mass:39.948,group:"Gas noble",use:"Element de la taula periòdica completa."},
+  {n:19,s:"K",name:"Potassi",mass:39.0983,group:"Metall alcalí",use:"Element de la taula periòdica completa."},
+  {n:20,s:"Ca",name:"Calci",mass:40.078,group:"Metall alcalinoterri",use:"Element de la taula periòdica completa."},
+  {n:21,s:"Sc",name:"Escandi",mass:44.956,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:22,s:"Ti",name:"Titani",mass:47.867,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:23,s:"V",name:"Vanadi",mass:50.942,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:24,s:"Cr",name:"Crom",mass:51.996,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:25,s:"Mn",name:"Manganès",mass:54.938,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:26,s:"Fe",name:"Ferro",mass:55.845,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:27,s:"Co",name:"Cobalt",mass:58.933,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:28,s:"Ni",name:"Níquel",mass:58.693,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:29,s:"Cu",name:"Coure",mass:63.546,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:30,s:"Zn",name:"Zinc",mass:65.38,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:31,s:"Ga",name:"Gal·li",mass:69.723,group:"Metall",use:"Element de la taula periòdica completa."},
+  {n:32,s:"Ge",name:"Germani",mass:72.63,group:"Semimetall",use:"Element de la taula periòdica completa."},
+  {n:33,s:"As",name:"Arsènic",mass:74.922,group:"Semimetall",use:"Element de la taula periòdica completa."},
+  {n:34,s:"Se",name:"Seleni",mass:78.971,group:"No metall",use:"Element de la taula periòdica completa."},
+  {n:35,s:"Br",name:"Brom",mass:79.904,group:"Halogen",use:"Element de la taula periòdica completa."},
+  {n:36,s:"Kr",name:"Criptó",mass:83.798,group:"Gas noble",use:"Element de la taula periòdica completa."},
+  {n:37,s:"Rb",name:"Rubidi",mass:85.468,group:"Metall alcalí",use:"Element de la taula periòdica completa."},
+  {n:38,s:"Sr",name:"Estronci",mass:87.62,group:"Metall alcalinoterri",use:"Element de la taula periòdica completa."},
+  {n:39,s:"Y",name:"Itri",mass:88.906,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:40,s:"Zr",name:"Zirconi",mass:91.224,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:41,s:"Nb",name:"Niobi",mass:92.906,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:42,s:"Mo",name:"Molibdè",mass:95.95,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:43,s:"Tc",name:"Tecneci",mass:98,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:44,s:"Ru",name:"Ruteni",mass:101.07,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:45,s:"Rh",name:"Rodi",mass:102.91,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:46,s:"Pd",name:"Pal·ladi",mass:106.42,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:47,s:"Ag",name:"Plata",mass:107.87,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:48,s:"Cd",name:"Cadmi",mass:112.41,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:49,s:"In",name:"Indi",mass:114.82,group:"Metall",use:"Element de la taula periòdica completa."},
+  {n:50,s:"Sn",name:"Estany",mass:118.71,group:"Metall",use:"Element de la taula periòdica completa."},
+  {n:51,s:"Sb",name:"Antimoni",mass:121.76,group:"Semimetall",use:"Element de la taula periòdica completa."},
+  {n:52,s:"Te",name:"Tel·luri",mass:127.6,group:"Semimetall",use:"Element de la taula periòdica completa."},
+  {n:53,s:"I",name:"Iode",mass:126.9,group:"Halogen",use:"Element de la taula periòdica completa."},
+  {n:54,s:"Xe",name:"Xenó",mass:131.29,group:"Gas noble",use:"Element de la taula periòdica completa."},
+  {n:55,s:"Cs",name:"Cesi",mass:132.91,group:"Metall alcalí",use:"Element de la taula periòdica completa."},
+  {n:56,s:"Ba",name:"Bari",mass:137.33,group:"Metall alcalinoterri",use:"Element de la taula periòdica completa."},
+  {n:57,s:"La",name:"Lantani",mass:138.91,group:"Lantànid",use:"Element de la taula periòdica completa."},
+  {n:58,s:"Ce",name:"Ceri",mass:140.12,group:"Lantànid",use:"Element de la taula periòdica completa."},
+  {n:59,s:"Pr",name:"Praseodimi",mass:140.91,group:"Lantànid",use:"Element de la taula periòdica completa."},
+  {n:60,s:"Nd",name:"Neodimi",mass:144.24,group:"Lantànid",use:"Element de la taula periòdica completa."},
+  {n:61,s:"Pm",name:"Prometi",mass:145,group:"Lantànid",use:"Element de la taula periòdica completa."},
+  {n:62,s:"Sm",name:"Samari",mass:150.36,group:"Lantànid",use:"Element de la taula periòdica completa."},
+  {n:63,s:"Eu",name:"Europi",mass:151.96,group:"Lantànid",use:"Element de la taula periòdica completa."},
+  {n:64,s:"Gd",name:"Gadolini",mass:157.25,group:"Lantànid",use:"Element de la taula periòdica completa."},
+  {n:65,s:"Tb",name:"Terbi",mass:158.93,group:"Lantànid",use:"Element de la taula periòdica completa."},
+  {n:66,s:"Dy",name:"Disprosi",mass:162.5,group:"Lantànid",use:"Element de la taula periòdica completa."},
+  {n:67,s:"Ho",name:"Holmi",mass:164.93,group:"Lantànid",use:"Element de la taula periòdica completa."},
+  {n:68,s:"Er",name:"Erbi",mass:167.26,group:"Lantànid",use:"Element de la taula periòdica completa."},
+  {n:69,s:"Tm",name:"Tuli",mass:168.93,group:"Lantànid",use:"Element de la taula periòdica completa."},
+  {n:70,s:"Yb",name:"Iterbi",mass:173.05,group:"Lantànid",use:"Element de la taula periòdica completa."},
+  {n:71,s:"Lu",name:"Luteci",mass:174.97,group:"Lantànid",use:"Element de la taula periòdica completa."},
+  {n:72,s:"Hf",name:"Hafni",mass:178.49,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:73,s:"Ta",name:"Tàntal",mass:180.95,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:74,s:"W",name:"Tungstè",mass:183.84,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:75,s:"Re",name:"Reni",mass:186.21,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:76,s:"Os",name:"Osmi",mass:190.23,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:77,s:"Ir",name:"Iridi",mass:192.22,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:78,s:"Pt",name:"Platí",mass:195.08,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:79,s:"Au",name:"Or",mass:196.97,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:80,s:"Hg",name:"Mercuri",mass:200.59,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:81,s:"Tl",name:"Tal·li",mass:204.38,group:"Metall",use:"Element de la taula periòdica completa."},
+  {n:82,s:"Pb",name:"Plom",mass:207.2,group:"Metall",use:"Element de la taula periòdica completa."},
+  {n:83,s:"Bi",name:"Bismut",mass:208.98,group:"Metall",use:"Element de la taula periòdica completa."},
+  {n:84,s:"Po",name:"Poloni",mass:209,group:"Semimetall",use:"Element de la taula periòdica completa."},
+  {n:85,s:"At",name:"Àstat",mass:210,group:"Halogen",use:"Element de la taula periòdica completa."},
+  {n:86,s:"Rn",name:"Radó",mass:222,group:"Gas noble",use:"Element de la taula periòdica completa."},
+  {n:87,s:"Fr",name:"Franci",mass:223,group:"Metall alcalí",use:"Element de la taula periòdica completa."},
+  {n:88,s:"Ra",name:"Radi",mass:226,group:"Metall alcalinoterri",use:"Element de la taula periòdica completa."},
+  {n:89,s:"Ac",name:"Actini",mass:227,group:"Actínid",use:"Element de la taula periòdica completa."},
+  {n:90,s:"Th",name:"Tori",mass:232.04,group:"Actínid",use:"Element de la taula periòdica completa."},
+  {n:91,s:"Pa",name:"Protactini",mass:231.04,group:"Actínid",use:"Element de la taula periòdica completa."},
+  {n:92,s:"U",name:"Urani",mass:238.03,group:"Actínid",use:"Element de la taula periòdica completa."},
+  {n:93,s:"Np",name:"Neptuni",mass:237,group:"Actínid",use:"Element de la taula periòdica completa."},
+  {n:94,s:"Pu",name:"Plutoni",mass:244,group:"Actínid",use:"Element de la taula periòdica completa."},
+  {n:95,s:"Am",name:"Americi",mass:243,group:"Actínid",use:"Element de la taula periòdica completa."},
+  {n:96,s:"Cm",name:"Curi",mass:247,group:"Actínid",use:"Element de la taula periòdica completa."},
+  {n:97,s:"Bk",name:"Berkeli",mass:247,group:"Actínid",use:"Element de la taula periòdica completa."},
+  {n:98,s:"Cf",name:"Californi",mass:251,group:"Actínid",use:"Element de la taula periòdica completa."},
+  {n:99,s:"Es",name:"Einsteini",mass:252,group:"Actínid",use:"Element de la taula periòdica completa."},
+  {n:100,s:"Fm",name:"Fermi",mass:257,group:"Actínid",use:"Element de la taula periòdica completa."},
+  {n:101,s:"Md",name:"Mendelevi",mass:258,group:"Actínid",use:"Element de la taula periòdica completa."},
+  {n:102,s:"No",name:"Nobeli",mass:259,group:"Actínid",use:"Element de la taula periòdica completa."},
+  {n:103,s:"Lr",name:"Laurenci",mass:266,group:"Actínid",use:"Element de la taula periòdica completa."},
+  {n:104,s:"Rf",name:"Rutherfordi",mass:267,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:105,s:"Db",name:"Dubni",mass:268,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:106,s:"Sg",name:"Seaborgi",mass:269,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:107,s:"Bh",name:"Bohri",mass:270,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:108,s:"Hs",name:"Hassi",mass:269,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:109,s:"Mt",name:"Meitneri",mass:278,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:110,s:"Ds",name:"Darmstadti",mass:281,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:111,s:"Rg",name:"Roentgeni",mass:282,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:112,s:"Cn",name:"Copernici",mass:285,group:"Metall de transició",use:"Element de la taula periòdica completa."},
+  {n:113,s:"Nh",name:"Nihoni",mass:286,group:"Metall",use:"Element de la taula periòdica completa."},
+  {n:114,s:"Fl",name:"Flerovi",mass:289,group:"Metall",use:"Element de la taula periòdica completa."},
+  {n:115,s:"Mc",name:"Moscovi",mass:290,group:"Metall",use:"Element de la taula periòdica completa."},
+  {n:116,s:"Lv",name:"Livermori",mass:293,group:"Metall",use:"Element de la taula periòdica completa."},
+  {n:117,s:"Ts",name:"Tenness",mass:294,group:"Halogen",use:"Element de la taula periòdica completa."},
+  {n:118,s:"Og",name:"Oganessó",mass:294,group:"Gas noble",use:"Element de la taula periòdica completa."}
 ];
 
+const ATOMIC_MASS_V21 = {H:1.008, He:4.0026, Li:6.94, Be:9.0122, B:10.81, C:12.011, N:14.007, O:15.999, F:18.998, Ne:20.18, Na:22.99, Mg:24.305, Al:26.982, Si:28.085, P:30.974, S:32.06, Cl:35.45, Ar:39.948, K:39.0983, Ca:40.078, Sc:44.956, Ti:47.867, V:50.942, Cr:51.996, Mn:54.938, Fe:55.845, Co:58.933, Ni:58.693, Cu:63.546, Zn:65.38, Ga:69.723, Ge:72.63, As:74.922, Se:78.971, Br:79.904, Kr:83.798, Rb:85.468, Sr:87.62, Y:88.906, Zr:91.224, Nb:92.906, Mo:95.95, Tc:98, Ru:101.07, Rh:102.91, Pd:106.42, Ag:107.87, Cd:112.41, In:114.82, Sn:118.71, Sb:121.76, Te:127.6, I:126.9, Xe:131.29, Cs:132.91, Ba:137.33, La:138.91, Ce:140.12, Pr:140.91, Nd:144.24, Pm:145, Sm:150.36, Eu:151.96, Gd:157.25, Tb:158.93, Dy:162.5, Ho:164.93, Er:167.26, Tm:168.93, Yb:173.05, Lu:174.97, Hf:178.49, Ta:180.95, W:183.84, Re:186.21, Os:190.23, Ir:192.22, Pt:195.08, Au:196.97, Hg:200.59, Tl:204.38, Pb:207.2, Bi:208.98, Po:209, At:210, Rn:222, Fr:223, Ra:226, Ac:227, Th:232.04, Pa:231.04, U:238.03, Np:237, Pu:244, Am:243, Cm:247, Bk:247, Cf:251, Es:252, Fm:257, Md:258, No:259, Lr:266, Rf:267, Db:268, Sg:269, Bh:270, Hs:269, Mt:278, Ds:281, Rg:282, Cn:285, Nh:286, Fl:289, Mc:290, Lv:293, Ts:294, Og:294};
 function ensureAtomicMassV7(){
   if (typeof ATOMIC_MASS !== "undefined") {
-    PERIODIC_ELEMENTS_V7.forEach(el => { if (!ATOMIC_MASS[el.s]) ATOMIC_MASS[el.s] = el.mass; });
+    Object.entries(ATOMIC_MASS_V21).forEach(([symbol, mass]) => { ATOMIC_MASS[symbol] = mass; });
+    PERIODIC_ELEMENTS_V7.forEach(el => { ATOMIC_MASS[el.s] = el.mass; });
   }
 }
 
@@ -536,7 +650,7 @@ if($("periodic-form")) $("periodic-form").addEventListener("submit", event => {
       title: "Taula periòdica i massa molar",
       summary,
       steps,
-      extra: `<div class="subject-note">La taula periòdica de la v7 és bàsica i pensada per ESO/Batxillerat. Es pot ampliar amb tots els elements en una v8.</div>`
+      extra: `<div class="subject-note">Taula periòdica completa amb els 118 elements. Les masses atòmiques són valors escolars aproximats.</div>`
     });
   } catch(err) {
     renderError("No s'ha pogut consultar la taula periòdica.", err.message);
@@ -1334,7 +1448,7 @@ function drawAnalyticCanvasById(canvasId, line, points=[]){
   // Vector label
   const mx = (X(ax) + X(bx)) / 2;
   const my = (Y(ay) + Y(by)) / 2;
-  ctx.fillStyle = "#991b1b";
+  ctx.fillStyle = "#b1b";
   ctx.font = "bold 15px system-ui, sans-serif";
   ctx.fillText(`v = (${anFmt(line.vx)}, ${anFmt(line.vy)})`, mx + 8, my - 8);
 }
@@ -2238,6 +2352,65 @@ if($("complex-plus-form")) $("complex-plus-form").addEventListener("submit", eve
     const scale=Math.max(5,...pts.map(p=>Math.hypot(p.x,p.y)))+1;
     v18RenderGraphResult({title, summary, legendHtml:`<ul class="multi-legend">${pts.map((p,i)=>`<li>P${i+1}=(${formatNumber(p.x)}, ${formatNumber(p.y)})</li>`).join("")}</ul>`, series:[{label:"complexos",points:pts}], scale, steps});
   }catch(err){ renderError("No s'ha pogut calcular el complex.", err.message); }
+}, true);
+
+
+/* V21 physics form repair */
+function updatePhysicsInputsV21(){
+  const box = $("physics-inputs");
+  const selector = $("physics-type");
+  if(!box || !selector) return;
+  const template = physicsTemplates[selector.value];
+  box.innerHTML = template || `<div class="subject-note">Aquest apartat encara no té camps configurats. Selecciona un altre apartat o actualitza l'aplicació.</div>`;
+}
+if($("physics-type")){
+  $("physics-type").addEventListener("change", updatePhysicsInputsV21);
+  updatePhysicsInputsV21();
+}
+
+
+/* V21 physics submit override */
+if($("physics-form")) $("physics-form").addEventListener("submit", event => {
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  try {
+    const t = $("physics-type").value;
+    let a = getMaybe("ph-a"), b = getMaybe("ph-b"), c = getMaybe("ph-c"), d = getMaybe("ph-d");
+    let title = "Física", summary = "", steps = [], note = "";
+    if(t==="mru"){ requireNonZero(b,"El temps"); const v=a/b; title="MRU"; summary=`v = <strong>${formatNumber(v)} m/s</strong>`; steps=[`Apliquem <span class="math">v = Δx/Δt</span>.`];}
+    else if(t==="mrua-velocity"){ const v=a+b*c; title="MRUA: velocitat"; summary=`v = <strong>${formatNumber(v)} m/s</strong>`; steps=[`Apliquem <span class="math">v = v₀ + at</span>.`];}
+    else if(t==="mrua-position"){ const x=a+b*d+0.5*c*d*d; title="MRUA: posició"; summary=`x = <strong>${formatNumber(x)} m</strong>`; steps=[`Apliquem <span class="math">x = x₀ + v₀t + ½at²</span>.`];}
+    else if(t==="newton"){ const F=a*b; title="Segona llei de Newton"; summary=`F = <strong>${formatNumber(F)} N</strong>`; steps=[`Apliquem <span class="math">F = ma</span>.`];}
+    else if(t==="weight"){ const P=a*b; title="Pes"; summary=`P = <strong>${formatNumber(P)} N</strong>`; steps=[`Apliquem <span class="math">P = mg</span>.`];}
+    else if(t==="momentum"){ const p=a*b; title="Quantitat de moviment"; summary=`p = <strong>${formatNumber(p)} kg·m/s</strong>`; steps=[`Apliquem <span class="math">p = mv</span>.`];}
+    else if(t==="impulse"){ const I=a*b; title="Impuls"; summary=`I = <strong>${formatNumber(I)} N·s</strong>`; steps=[`Apliquem <span class="math">I = FΔt</span>.`];}
+    else if(t==="centripetal"){ requirePositive(c,"El radi"); const F=a*b*b/c; title="Força centrípeta"; summary=`Fc = <strong>${formatNumber(F)} N</strong>`; steps=[`Apliquem <span class="math">Fc = mv²/r</span>.`];}
+    else if(t==="work"){ const W=a*b*Math.cos(c*Math.PI/180); title="Treball"; summary=`W = <strong>${formatNumber(W)} J</strong>`; steps=[`Apliquem <span class="math">W = Fd cosθ</span>.`];}
+    else if(t==="power"){ requireNonZero(b,"El temps"); const P=a/b; title="Potència"; summary=`P = <strong>${formatNumber(P)} W</strong>`; steps=[`Apliquem <span class="math">P = W/t</span>.`];}
+    else if(t==="kinetic"){ const E=0.5*a*b*b; title="Energia cinètica"; summary=`Ec = <strong>${formatNumber(E)} J</strong>`; steps=[`Apliquem <span class="math">Ec = ½mv²</span>.`];}
+    else if(t==="potential"){ const E=a*b*c; title="Energia potencial"; summary=`Ep = <strong>${formatNumber(E)} J</strong>`; steps=[`Apliquem <span class="math">Ep = mgh</span>.`];}
+    else if(t==="spring"){ const E=0.5*a*b*b; title="Energia elàstica"; summary=`Ee = <strong>${formatNumber(E)} J</strong>`; steps=[`Apliquem <span class="math">Ee = ½kx²</span>.`];}
+    else if(t==="mechanical"){ const E=a+b; title="Energia mecànica"; summary=`Em = <strong>${formatNumber(E)} J</strong>`; steps=[`Apliquem <span class="math">Em = Ec + Ep</span>.`];}
+    else if(t==="density"){ requireNonZero(b,"El volum"); const rho=a/b; title="Densitat"; summary=`ρ = <strong>${formatNumber(rho)} kg/m³</strong>`; steps=[`Apliquem <span class="math">ρ = m/V</span>.`];}
+    else if(t==="pressure"){ requireNonZero(b,"La superfície"); const p=a/b; title="Pressió"; summary=`p = <strong>${formatNumber(p)} Pa</strong>`; steps=[`Apliquem <span class="math">p = F/S</span>.`];}
+    else if(t==="hydrostatic"){ const p=a*b*c; title="Pressió hidrostàtica"; summary=`p = <strong>${formatNumber(p)} Pa</strong>`; steps=[`Apliquem <span class="math">p = ρgh</span>.`];}
+    else if(t==="buoyancy"){ const E=a*b*c; title="Empenta d’Arquímedes"; summary=`E = <strong>${formatNumber(E)} N</strong>`; steps=[`Apliquem <span class="math">E = ρgV</span>.`];}
+    else if(t==="wave"){ const v=a*b; title="Velocitat d’ona"; summary=`v = <strong>${formatNumber(v)} m/s</strong>`; steps=[`Apliquem <span class="math">v = λf</span>.`];}
+    else if(t==="period"){ requireNonZero(a,"La freqüència"); const T=1/a; title="Període"; summary=`T = <strong>${formatNumber(T)} s</strong>`; steps=[`Apliquem <span class="math">T = 1/f</span>.`];}
+    else if(t==="lens"){ requireNonZero(a,"La focal"); requireNonZero(b,"La distància objecte"); const inv=1/a-1/b; requireNonZero(inv,"1/f - 1/do"); const di=1/inv; title="Lent prima"; summary=`di = <strong>${formatNumber(di)} cm</strong>`; steps=[`Apliquem <span class="math">1/f = 1/do + 1/di</span>.`];}
+    else if(t==="ohm"){ const V=a*b; title="Llei d’Ohm"; summary=`V = <strong>${formatNumber(V)} V</strong>`; steps=[`Apliquem <span class="math">V = IR</span>.`];}
+    else if(t==="electric-power"){ const P=a*b; title="Potència elèctrica"; summary=`P = <strong>${formatNumber(P)} W</strong>`; steps=[`Apliquem <span class="math">P = VI</span>.`];}
+    else if(t==="resistance-series"){ const arr=parseNumberList("ph-list"); const R=arr.reduce((s,x)=>s+x,0); title="Resistències en sèrie"; summary=`Req = <strong>${formatNumber(R)} Ω</strong>`; steps=[`En sèrie se sumen directament.`];}
+    else if(t==="resistance-parallel"){ const arr=parseNumberList("ph-list"); if(arr.some(x=>x===0)) throw new Error("Cap resistència pot ser 0."); const inv=arr.reduce((s,x)=>s+1/x,0); const R=1/inv; title="Resistències en paral·lel"; summary=`Req = <strong>${formatNumber(R)} Ω</strong>`; steps=[`En paral·lel: 1/Req = 1/R₁ + 1/R₂ + ...`];}
+    else if(t==="coulomb"){ requireNonZero(c,"La distància"); const F=COULOMB_K*a*b/(c*c); title="Llei de Coulomb"; summary=`F = <strong>${formatNumber(F)} N</strong>`; steps=[`Apliquem <span class="math">F = kq₁q₂/r²</span>.`];}
+    else if(t==="heat"){ const Q=a*b*c; title="Calor sensible"; summary=`Q = <strong>${formatNumber(Q)} J</strong>`; steps=[`Apliquem <span class="math">Q = mcΔT</span>.`];}
+    else if(t==="phase"){ const Q=a*b; title="Calor latent"; summary=`Q = <strong>${formatNumber(Q)} J</strong>`; steps=[`Apliquem <span class="math">Q = mL</span>.`];}
+    else if(t==="ideal-gas"){ requireNonZero(c,"Els mols"); const T=a*b/(c*GAS_R); title="Gas ideal"; summary=`T = <strong>${formatNumber(T)} K</strong>`; steps=[`Apliquem <span class="math">PV = nRT</span>.`];}
+    else throw new Error("Apartat de física no reconegut: " + t);
+    render({title, summary, steps, extra: note ? `<div class="subject-note">${note}</div>` : ""});
+  } catch(err) {
+    renderError("No s'ha pogut calcular l'apartat de física.", err.message);
+  }
 }, true);
 
 /* PWA */
