@@ -2433,3 +2433,253 @@ if ("serviceWorker" in navigator) {
       .catch(console.warn);
   });
 }
+
+
+/* V22: revisió global de física i gràfiques */
+(function(){
+  "use strict";
+
+  const $v = id => document.getElementById(id);
+  const fmt = (typeof formatNumber === "function")
+    ? formatNumber
+    : (n) => Number.isFinite(n) ? Number(n).toLocaleString("ca-ES", {maximumFractionDigits: 6}) : String(n);
+
+  function num(id){
+    const el = $v(id);
+    if(!el) throw new Error("Falta el camp " + id + ".");
+    const value = Number(String(el.value).replace(",", "."));
+    if(!Number.isFinite(value)) throw new Error("El camp " + id + " ha de ser numèric.");
+    return value;
+  }
+  function nonZero(value, name){ if(Math.abs(value) < 1e-14) throw new Error(name + " no pot ser 0."); }
+  function positive(value, name){ if(value <= 0) throw new Error(name + " ha de ser positiu."); }
+  function parseList(id){
+    const el = $v(id);
+    if(!el) throw new Error("Falta la llista " + id + ".");
+    const arr = el.value.split(",").map(v => Number(v.trim().replace(",", ".")));
+    if(!arr.length || arr.some(v => !Number.isFinite(v))) throw new Error("La llista ha de contenir nombres separats per comes.");
+    return arr;
+  }
+  function ensureRender(payload){
+    if(typeof render === "function") return render(payload);
+    const box = $v("result");
+    if(box) box.innerHTML = `<article class="result-card"><h3>${payload.title}</h3><p>${payload.summary}</p>${payload.extra || ""}<ol>${(payload.steps||[]).map(s=>`<li>${s}</li>`).join("")}</ol></article>`;
+  }
+  function ensureError(title, message){
+    if(typeof renderError === "function") return renderError(title, message);
+    const box = $v("result");
+    if(box) box.innerHTML = `<article class="result-card error-message"><h3>${title}</h3><p>${message}</p></article>`;
+  }
+  function field(label, id, value, unit="", type="number"){
+    const step = type === "number" ? ` step="any"` : "";
+    return `<label>${label}${unit ? " (" + unit + ")" : ""}<input ${type === "number" ? 'type="number"' : ""} id="${id}" value="${value}"${step}></label>`;
+  }
+
+  const canonical = {
+    "mrua-v": "mrua-velocity",
+    "mrua-x": "mrua-position",
+    "epower": "electric-power",
+    "rseries": "resistance-series",
+    "rparallel": "resistance-parallel",
+    "latent": "phase",
+    "idealgas": "ideal-gas"
+  };
+  function normType(t){ return canonical[t] || t; }
+
+  const templatesCore = {
+    mru: field("Desplaçament Δx","ph-a",100,"m") + field("Temps Δt","ph-b",20,"s"),
+    "mrua-velocity": field("Velocitat inicial v₀","ph-a",3,"m/s") + field("Acceleració a","ph-b",2,"m/s²") + field("Temps t","ph-c",5,"s"),
+    "mrua-position": field("Posició inicial x₀","ph-a",0,"m") + field("Velocitat inicial v₀","ph-b",3,"m/s") + field("Acceleració a","ph-c",2,"m/s²") + field("Temps t","ph-d",5,"s"),
+    newton: field("Massa m","ph-a",10,"kg") + field("Acceleració a","ph-b",2,"m/s²"),
+    weight: field("Massa m","ph-a",60,"kg") + field("Gravetat g","ph-b",9.81,"m/s²"),
+    momentum: field("Massa m","ph-a",2,"kg") + field("Velocitat v","ph-b",5,"m/s"),
+    impulse: field("Força F","ph-a",10,"N") + field("Temps Δt","ph-b",3,"s"),
+    centripetal: field("Massa m","ph-a",2,"kg") + field("Velocitat v","ph-b",4,"m/s") + field("Radi r","ph-c",1.5,"m"),
+    work: field("Força F","ph-a",20,"N") + field("Desplaçament d","ph-b",5,"m") + field("Angle θ","ph-c",0,"graus"),
+    power: field("Treball W","ph-a",500,"J") + field("Temps t","ph-b",10,"s"),
+    kinetic: field("Massa m","ph-a",2,"kg") + field("Velocitat v","ph-b",10,"m/s"),
+    potential: field("Massa m","ph-a",2,"kg") + field("Gravetat g","ph-b",9.81,"m/s²") + field("Altura h","ph-c",5,"m"),
+    spring: field("Constant elàstica k","ph-a",100,"N/m") + field("Deformació x","ph-b",0.2,"m"),
+    mechanical: field("Energia cinètica Ec","ph-a",100,"J") + field("Energia potencial Ep","ph-b",50,"J"),
+    density: field("Massa m","ph-a",10,"kg") + field("Volum V","ph-b",2,"m³"),
+    pressure: field("Força F","ph-a",100,"N") + field("Superfície S","ph-b",0.5,"m²"),
+    hydrostatic: field("Densitat ρ","ph-a",1000,"kg/m³") + field("Gravetat g","ph-b",9.81,"m/s²") + field("Profunditat h","ph-c",2,"m"),
+    buoyancy: field("Densitat fluid ρ","ph-a",1000,"kg/m³") + field("Gravetat g","ph-b",9.81,"m/s²") + field("Volum desplaçat V","ph-c",0.01,"m³"),
+    wave: field("Longitud d’ona λ","ph-a",2,"m") + field("Freqüència f","ph-b",5,"Hz"),
+    period: field("Freqüència f","ph-a",50,"Hz"),
+    lens: field("Distància focal f","ph-a",10,"cm") + field("Distància objecte do","ph-b",30,"cm"),
+    ohm: field("Intensitat I","ph-a",2,"A") + field("Resistència R","ph-b",5,"Ω"),
+    "electric-power": field("Tensió V","ph-a",230,"V") + field("Intensitat I","ph-b",2,"A"),
+    "resistance-series": `<label>Resistències en Ω separades per comes<input id="ph-list" value="10,20,30"></label>`,
+    "resistance-parallel": `<label>Resistències en Ω separades per comes<input id="ph-list" value="10,20,30"></label>`,
+    coulomb: field("Càrrega q₁","ph-a",0.000001,"C") + field("Càrrega q₂","ph-b",0.000002,"C") + field("Distància r","ph-c",0.1,"m"),
+    heat: field("Massa m","ph-a",1,"kg") + field("Calor específica c","ph-b",4180,"J/kg·K") + field("Canvi de temperatura ΔT","ph-c",10,"K o °C"),
+    phase: field("Massa m","ph-a",0.5,"kg") + field("Calor latent L","ph-b",334000,"J/kg"),
+    "ideal-gas": field("Pressió P","ph-a",1,"atm") + field("Volum V","ph-b",22.4,"L") + field("Mols n","ph-c",1,"mol")
+  };
+
+  window.physicsTemplates = Object.assign({}, templatesCore, {
+    "mrua-v": templatesCore["mrua-velocity"],
+    "mrua-x": templatesCore["mrua-position"],
+    epower: templatesCore["electric-power"],
+    rseries: templatesCore["resistance-series"],
+    rparallel: templatesCore["resistance-parallel"],
+    latent: templatesCore.phase,
+    idealgas: templatesCore["ideal-gas"]
+  });
+
+  window.updatePhysicsInputs = function updatePhysicsInputs(){
+    const box = $v("physics-inputs");
+    const select = $v("physics-type");
+    if(!box || !select) return;
+    const html = window.physicsTemplates[select.value] || templatesCore[normType(select.value)];
+    box.innerHTML = html || `<div class="warning-box">Aquest apartat no té camps configurats.</div>`;
+  };
+
+  function calcPhysics(rawType){
+    const type = normType(rawType);
+    const K = 8.99e9, R = 0.082057;
+    let title = "Física", summary = "", steps = [], note = "";
+
+    if(type==="mru"){ const dx=num("ph-a"), t=num("ph-b"); nonZero(t,"El temps"); const v=dx/t; title="MRU"; summary=`v = <strong>${fmt(v)} m/s</strong>`; steps=[`v = Δx/Δt = ${fmt(dx)}/${fmt(t)}`];}
+    else if(type==="mrua-velocity"){ const v0=num("ph-a"), a=num("ph-b"), t=num("ph-c"); const v=v0+a*t; title="MRUA: velocitat final"; summary=`v = <strong>${fmt(v)} m/s</strong>`; steps=[`v = v₀ + at`];}
+    else if(type==="mrua-position"){ const x0=num("ph-a"), v0=num("ph-b"), a=num("ph-c"), t=num("ph-d"); const x=x0+v0*t+0.5*a*t*t; title="MRUA: posició"; summary=`x = <strong>${fmt(x)} m</strong>`; steps=[`x = x₀ + v₀t + ½at²`];}
+    else if(type==="newton"){ const m=num("ph-a"), a=num("ph-b"); const F=m*a; title="Segona llei de Newton"; summary=`F = <strong>${fmt(F)} N</strong>`; steps=[`F = ma`];}
+    else if(type==="weight"){ const m=num("ph-a"), g=num("ph-b"); const P=m*g; title="Pes"; summary=`P = <strong>${fmt(P)} N</strong>`; steps=[`P = mg`];}
+    else if(type==="momentum"){ const m=num("ph-a"), v=num("ph-b"); const p=m*v; title="Quantitat de moviment"; summary=`p = <strong>${fmt(p)} kg·m/s</strong>`; steps=[`p = mv`];}
+    else if(type==="impulse"){ const F=num("ph-a"), t=num("ph-b"); const I=F*t; title="Impuls"; summary=`I = <strong>${fmt(I)} N·s</strong>`; steps=[`I = FΔt`];}
+    else if(type==="centripetal"){ const m=num("ph-a"), v=num("ph-b"), r=num("ph-c"); positive(r,"El radi"); const F=m*v*v/r; title="Força centrípeta"; summary=`Fc = <strong>${fmt(F)} N</strong>`; steps=[`Fc = mv²/r`];}
+    else if(type==="work"){ const F=num("ph-a"), d=num("ph-b"), angle=num("ph-c"); const W=F*d*Math.cos(angle*Math.PI/180); title="Treball"; summary=`W = <strong>${fmt(W)} J</strong>`; steps=[`W = Fd cosθ`];}
+    else if(type==="power"){ const W=num("ph-a"), t=num("ph-b"); nonZero(t,"El temps"); const P=W/t; title="Potència"; summary=`P = <strong>${fmt(P)} W</strong>`; steps=[`P = W/t`];}
+    else if(type==="kinetic"){ const m=num("ph-a"), v=num("ph-b"); const E=0.5*m*v*v; title="Energia cinètica"; summary=`Ec = <strong>${fmt(E)} J</strong>`; steps=[`Ec = ½mv²`];}
+    else if(type==="potential"){ const m=num("ph-a"), g=num("ph-b"), h=num("ph-c"); const E=m*g*h; title="Energia potencial"; summary=`Ep = <strong>${fmt(E)} J</strong>`; steps=[`Ep = mgh`];}
+    else if(type==="spring"){ const k=num("ph-a"), x=num("ph-b"); const E=0.5*k*x*x; title="Energia elàstica"; summary=`Ee = <strong>${fmt(E)} J</strong>`; steps=[`Ee = ½kx²`];}
+    else if(type==="mechanical"){ const Ec=num("ph-a"), Ep=num("ph-b"); const E=Ec+Ep; title="Energia mecànica"; summary=`Em = <strong>${fmt(E)} J</strong>`; steps=[`Em = Ec + Ep`];}
+    else if(type==="density"){ const m=num("ph-a"), V=num("ph-b"); nonZero(V,"El volum"); const rho=m/V; title="Densitat"; summary=`ρ = <strong>${fmt(rho)} kg/m³</strong>`; steps=[`ρ = m/V`];}
+    else if(type==="pressure"){ const F=num("ph-a"), S=num("ph-b"); nonZero(S,"La superfície"); const p=F/S; title="Pressió"; summary=`p = <strong>${fmt(p)} Pa</strong>`; steps=[`p = F/S`];}
+    else if(type==="hydrostatic"){ const rho=num("ph-a"), g=num("ph-b"), h=num("ph-c"); const p=rho*g*h; title="Pressió hidrostàtica"; summary=`p = <strong>${fmt(p)} Pa</strong>`; steps=[`p = ρgh`];}
+    else if(type==="buoyancy"){ const rho=num("ph-a"), g=num("ph-b"), V=num("ph-c"); const E=rho*g*V; title="Empenta d’Arquímedes"; summary=`E = <strong>${fmt(E)} N</strong>`; steps=[`E = ρgV`];}
+    else if(type==="wave"){ const lambda=num("ph-a"), f=num("ph-b"); const v=lambda*f; title="Velocitat d’ona"; summary=`v = <strong>${fmt(v)} m/s</strong>`; steps=[`v = λf`];}
+    else if(type==="period"){ const f=num("ph-a"); nonZero(f,"La freqüència"); const T=1/f; title="Període"; summary=`T = <strong>${fmt(T)} s</strong>`; steps=[`T = 1/f`];}
+    else if(type==="lens"){ const focal=num("ph-a"), doo=num("ph-b"); nonZero(focal,"La focal"); nonZero(doo,"La distància objecte"); const inv=1/focal-1/doo; nonZero(inv,"1/f - 1/do"); const di=1/inv; title="Lent prima"; summary=`di = <strong>${fmt(di)} cm</strong>`; steps=[`1/di = 1/f - 1/do`]; note="El signe depèn del conveni de signes emprat.";}
+    else if(type==="ohm"){ const I=num("ph-a"), Rr=num("ph-b"); const V=I*Rr; title="Llei d’Ohm"; summary=`V = <strong>${fmt(V)} V</strong>`; steps=[`V = IR`];}
+    else if(type==="electric-power"){ const V=num("ph-a"), I=num("ph-b"); const P=V*I; title="Potència elèctrica"; summary=`P = <strong>${fmt(P)} W</strong>`; steps=[`P = VI`];}
+    else if(type==="resistance-series"){ const arr=parseList("ph-list"); const Req=arr.reduce((s,x)=>s+x,0); title="Resistències en sèrie"; summary=`Req = <strong>${fmt(Req)} Ω</strong>`; steps=[`Req = R₁ + R₂ + ...`];}
+    else if(type==="resistance-parallel"){ const arr=parseList("ph-list"); if(arr.some(x=>Math.abs(x)<1e-14)) throw new Error("Cap resistència pot ser 0."); const inv=arr.reduce((s,x)=>s+1/x,0); const Req=1/inv; title="Resistències en paral·lel"; summary=`Req = <strong>${fmt(Req)} Ω</strong>`; steps=[`1/Req = 1/R₁ + 1/R₂ + ...`];}
+    else if(type==="coulomb"){ const q1=num("ph-a"), q2=num("ph-b"), r=num("ph-c"); nonZero(r,"La distància"); const F=K*q1*q2/(r*r); title="Llei de Coulomb"; summary=`F = <strong>${fmt(F)} N</strong>`; steps=[`F = kq₁q₂/r²`]; note="El signe indica atracció o repulsió segons els signes de les càrregues.";}
+    else if(type==="heat"){ const m=num("ph-a"), c=num("ph-b"), dt=num("ph-c"); const Q=m*c*dt; title="Calor sensible"; summary=`Q = <strong>${fmt(Q)} J</strong>`; steps=[`Q = mcΔT`];}
+    else if(type==="phase"){ const m=num("ph-a"), L=num("ph-b"); const Q=m*L; title="Calor latent"; summary=`Q = <strong>${fmt(Q)} J</strong>`; steps=[`Q = mL`];}
+    else if(type==="ideal-gas"){ const P=num("ph-a"), V=num("ph-b"), n=num("ph-c"); nonZero(n,"Els mols"); const T=P*V/(n*0.082057); title="Gas ideal"; summary=`T = <strong>${fmt(T)} K</strong>`; steps=[`PV = nRT`, `T = PV/(nR), amb R = 0,082057 L·atm·mol⁻¹·K⁻¹`]; note="Model ideal; és una aproximació.";}
+    else { throw new Error("Apartat de física no reconegut: " + rawType); }
+
+    return {title, summary, steps, extra: note ? `<div class="subject-note">${note}</div>` : ""};
+  }
+
+  const physicsForm = $v("physics-form");
+  if(physicsForm){
+    $v("physics-type")?.addEventListener("change", window.updatePhysicsInputs);
+    physicsForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      try { ensureRender(calcPhysics($v("physics-type").value)); }
+      catch(err) { ensureError("No s'ha pogut calcular l'apartat de física.", err.message); }
+    }, true);
+    window.updatePhysicsInputs();
+  }
+
+  window.v22DrawSeriesOnCanvas = function(canvas, series, scale){
+    if(!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const size = Math.max(320, Math.round(rect.width || 720));
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = size*dpr; canvas.height = size*dpr; canvas.style.height = size + "px";
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    const W=size,H=size,pad=Math.max(34,Math.round(size*0.07));
+    const safeScale = Math.max(1, Number(scale)||10);
+    const min=-safeScale,max=safeScale;
+    const X=x=>pad+(x-min)/(max-min)*(W-2*pad);
+    const Y=y=>H-pad-(y-min)/(max-min)*(H-2*pad);
+    ctx.fillStyle="#fff";ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle="#e5e7eb";ctx.lineWidth=1;
+    for(let i=Math.ceil(min);i<=Math.floor(max);i++){ctx.beginPath();ctx.moveTo(X(i),pad);ctx.lineTo(X(i),H-pad);ctx.stroke();ctx.beginPath();ctx.moveTo(pad,Y(i));ctx.lineTo(W-pad,Y(i));ctx.stroke();}
+    ctx.strokeStyle="#374151";ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(X(0),pad);ctx.lineTo(X(0),H-pad);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(pad,Y(0));ctx.lineTo(W-pad,Y(0));ctx.stroke();
+    const colors=["#1d4ed8","#b91c1c","#047857","#7c3aed","#b45309","#0f766e","#db2777"];
+    series.forEach((s,idx)=>{
+      ctx.strokeStyle=colors[idx%colors.length];ctx.lineWidth=3;ctx.beginPath();
+      let started=false;
+      (s.points||[]).forEach(p=>{
+        if(!Number.isFinite(p.x)||!Number.isFinite(p.y)){started=false;return;}
+        const cx=X(p.x), cy=Y(p.y);
+        if(!started){ctx.moveTo(cx,cy);started=true;} else ctx.lineTo(cx,cy);
+      });
+      ctx.stroke();
+    });
+  };
+
+  window.v22RenderGraph = function(payload){
+    const id = "v22-graph-" + Math.random().toString(36).slice(2);
+    const extra = `${payload.legend || ""}<div class="v22-canvas-wrap"><canvas id="${id}"></canvas></div>${payload.extra || ""}`;
+    ensureRender({title:payload.title, summary:payload.summary, steps:payload.steps||[], extra});
+    requestAnimationFrame(()=>window.v22DrawSeriesOnCanvas($v(id), payload.series || [], payload.scale || 10));
+  };
+
+  const functionsForm = $v("functions-form");
+  if(functionsForm && typeof buildFn === "function"){
+    functionsForm.addEventListener("submit", (event)=>{
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      try{
+        const xmin = num("graph-xmin"), xmax = num("graph-xmax");
+        if(xmax <= xmin) throw new Error("X màx ha de ser més gran que X mín.");
+        const F = buildFn();
+        const pts = [];
+        for(let i=0;i<=900;i++){ const x=xmin+(xmax-xmin)*i/900; let y; try{ y=F.fn(x); }catch{ y=NaN; } pts.push({x,y}); }
+        const yAbs = pts.map(p=>Math.abs(p.y)).filter(Number.isFinite);
+        const scale = Math.max(10, Math.abs(xmin), Math.abs(xmax), ...yAbs.slice(0,2000));
+        window.v22RenderGraph({
+          title:"Gràfica de funció",
+          summary:`f(x)=<strong>${F.expr}</strong>`,
+          series:[{label:F.expr, points:pts}],
+          scale,
+          steps:["Generem punts de la funció en l'interval triat.","Pintem el canvas després de renderitzar el resultat perquè sigui visible."]
+        });
+      }catch(err){ ensureError("No s'ha pogut dibuixar la funció.", err.message); }
+    }, true);
+  }
+
+  // Override v15/v16 multi graph canvas if those forms exist, so the graph is visible on mobile.
+  const multiForm = $v("multi-graphs-form");
+  if(multiForm && typeof v15ParseLines === "function" && typeof v15Eval === "function"){
+    multiForm.addEventListener("submit", (event)=>{
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      try{
+        const type = $v("mg-type").value;
+        const lines = v15ParseLines($v("mg-expressions").value);
+        const min = num("mg-min"), max = num("mg-max"), scale = num("mg-scale");
+        const mode = $v("mg-angle").value;
+        if(max <= min) throw new Error("El màxim ha de ser més gran que el mínim.");
+        const series = [];
+        for(const line of lines){
+          const points = [];
+          for(let i=0;i<=800;i++){
+            const t = min + (max-min)*i/800;
+            if(type==="cartesian") points.push({x:t, y:v15Eval(line,{x:t},mode)});
+            else if(type==="polar"){ const r=v15Eval(line,{t},mode); const a=mode==="deg"?t*Math.PI/180:t; points.push({x:r*Math.cos(a),y:r*Math.sin(a)}); }
+            else {
+              const parts=line.split(";").map(s=>s.trim());
+              if(parts.length<2) throw new Error("En paramètriques usa format: x(t); y(t)");
+              points.push({x:v15Eval(parts[0],{t},mode),y:v15Eval(parts[1],{t},mode)});
+            }
+          }
+          series.push({label:line, points});
+        }
+        const legend = `<ul class="multi-legend">${series.map((s,i)=>`<li>${i+1}. ${s.label}</li>`).join("")}</ul>`;
+        window.v22RenderGraph({title:"Múltiples gràfiques",summary:`S'han dibuixat <strong>${series.length}</strong> funcions.`,legend,series,scale,steps:["Generem punts per a cada funció.","Pintem totes les sèries al mateix canvas."]});
+      }catch(err){ ensureError("No s'han pogut dibuixar les múltiples funcions.", err.message); }
+    }, true);
+  }
+})();

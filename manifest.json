@@ -1,7 +1,7 @@
 {
-  "name": "Calculadora Científica Educativa v21",
+  "name": "Calculadora Científica Educativa v22",
   "short_name": "Calc Educativa",
-  "description": "PWA educativa en català amb matemàtiques, física, química, gràfiques, CAS parcial, taula periòdica completa i funcionament offline reforçat.",
+  "description": "PWA educativa en català amb física revisada, química, matemàtiques, gràfiques robustes, CAS parcial, taula periòdica completa i offline reforçat.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
