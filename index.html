@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Calculadora Científica Educativa Plus v19</title>
+  <meta name="description" content="PWA educativa en català inspirada en calculadores científiques 991: càlcul, gràfiques, equacions, matrius, estadística, fórmules i unitats." />
+  <meta name="theme-color" content="#1e3a8a" />
+
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="stylesheet" href="./styles.css" />
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+</head>
+
+<body>
+  <header class="app-header">
+    <div>
+      <p class="eyebrow">PWA educativa · ESO/Batxillerat inicial</p>
+      <h1>Calculadora Científica Educativa Plus</h1>
+      <p class="subtitle">
+        Calculadora científica, gràfica i educativa amb matemàtiques, física, química, gràfiques avançades, CAS parcial i mode estudi pas a pas.
+      </p>
+    </div>
+  </header>
+
+  <main class="app-layout">
+    <aside class="panel controls-panel" aria-labelledby="modules-title">
+      <h2 id="modules-title">Mòduls</h2>
+
+      <div class="tabs" role="tablist" aria-label="Mòduls de càlcul">
+        <button class="tab active" data-module="scientific" role="tab" aria-selected="true">Científica</button>
+        <button class="tab" data-module="fractions" role="tab" aria-selected="false">Fraccions</button>
+        <button class="tab" data-module="equations" role="tab" aria-selected="false">Equacions</button>
+        <button class="tab" data-module="systems" role="tab" aria-selected="false">Sistemes</button>
+        <button class="tab" data-module="functions" role="tab" aria-selected="false">Gràfiques</button>
+        <button class="tab" data-module="polar" role="tab" aria-selected="false">Polar</button>
+        <button class="tab" data-module="parametric" role="tab" aria-selected="false">Paramètrica</button>
+        <button class="tab" data-module="calculus" role="tab" aria-selected="false">Càlcul</button>
+        <button class="tab" data-module="physics" role="tab" aria-selected="false">Física</button>
+        <button class="tab" data-module="chemistry" role="tab" aria-selected="false">Química</button>
+        <button class="tab" data-module="periodic" role="tab" aria-selected="false">Taula periòdica</button>
+        <button class="tab" data-module="complex" role="tab" aria-selected="false">Complexos</button>
+        <button class="tab" data-module="matrix" role="tab" aria-selected="false">Matrius</button>
+        <button class="tab" data-module="vectors" role="tab" aria-selected="false">Vectors</button>
+        <button class="tab" data-module="analytic" role="tab" aria-selected="false">Rectes 2D</button>
+        <button class="tab" data-module="analytic-tools" role="tab" aria-selected="false">Analítica +</button>
+        <button class="tab" data-module="statistics" role="tab" aria-selected="false">Estadística</button>
+        <button class="tab" data-module="combinatorics" role="tab" aria-selected="false">Combinatòria</button>
+        <button class="tab" data-module="numbertheory" role="tab" aria-selected="false">Nombres</button>
+        <button class="tab" data-module="geometry" role="tab" aria-selected="false">Geometria</button>
+        <button class="tab" data-module="units" role="tab" aria-selected="false">Unitats</button>
+        <button class="tab" data-module="formulas" role="tab" aria-selected="false">Fórmules</button>
+      <button class="tab" data-module="study" role="tab" aria-selected="false">Estudi</button>
+        <button class="tab" data-module="theme" role="tab" aria-selected="false">Accessibilitat</button>
+        <button class="tab" data-module="multi-graphs" role="tab" aria-selected="false">Multi gràfiques</button>
+        <button class="tab" data-module="custom-functions" role="tab" aria-selected="false">Funcions pròpies</button>
+        <button class="tab" data-module="rational-plus" role="tab" aria-selected="false">Racionals +</button>
+        <button class="tab" data-module="complex-plus" role="tab" aria-selected="false">Complexos +</button>
+        <button class="tab" data-module="number-plus" role="tab" aria-selected="false">Nombres +</button>
+        <button class="tab" data-module="implicit" role="tab" aria-selected="false">Implícites</button>
+        <button class="tab" data-module="function-analysis-plus" role="tab" aria-selected="false">Anàlisi f/g</button>
+        <button class="tab" data-module="cas-plus" role="tab" aria-selected="false">CAS +</button>
+      </div>
+
+      <form id="scientific-form" class="calculator-form active" data-form="scientific">
+        <h3>Calculadora científica 991</h3>
+        <div class="formula-card"><strong>Inclou:</strong> sin, cos, tan, log, ln, potències, arrels, factorial, π, e, %, mode graus/radians i historial.</div>
+        <label>Expressió<input type="text" id="scientific-expression" inputmode="decimal" autocomplete="off" placeholder="Exemple: sin(30)+sqrt(16)+5!" /></label>
+        <div class="two-cols">
+          <label>Mode angular<select id="angle-mode"><option value="deg">Graus</option><option value="rad">Radians</option></select></label>
+          <button type="button" class="secondary-button" id="clear-history-button">Netejar historial</button>
+        </div>
+        <div class="scientific-keypad" aria-label="Teclat científic">
+          <button type="button" data-insert="sin(">sin</button><button type="button" data-insert="cos(">cos</button><button type="button" data-insert="tan(">tan</button><button type="button" data-insert="asin(">asin</button><button type="button" data-insert="acos(">acos</button>
+          <button type="button" data-insert="atan(">atan</button><button type="button" data-insert="log(">log</button><button type="button" data-insert="ln(">ln</button><button type="button" data-insert="sqrt(">√</button><button type="button" data-insert="root(">ⁿ√</button>
+          <button type="button" data-insert="^2">x²</button><button type="button" data-insert="^">xʸ</button><button type="button" data-insert="!">!</button><button type="button" data-insert="pi">π</button><button type="button" data-insert="e">e</button>
+          <button type="button" data-insert="7">7</button><button type="button" data-insert="8">8</button><button type="button" data-insert="9">9</button><button type="button" data-insert="/">÷</button><button type="button" data-action="backspace">⌫</button>
+          <button type="button" data-insert="4">4</button><button type="button" data-insert="5">5</button><button type="button" data-insert="6">6</button><button type="button" data-insert="*">×</button><button type="button" data-action="clear">C</button>
+          <button type="button" data-insert="1">1</button><button type="button" data-insert="2">2</button><button type="button" data-insert="3">3</button><button type="button" data-insert="-">−</button><button type="button" data-insert="(">(</button>
+          <button type="button" data-insert="0">0</button><button type="button" data-insert=".">.</button><button type="button" data-insert="E">EXP</button><button type="button" data-insert="+">+</button><button type="button" data-insert=")">)</button>
+        </div>
+        <button type="submit" class="primary-button">Calcular i explicar</button>
+      </form>
+
+      <form id="fractions-form" class="calculator-form" data-form="fractions">
+        <h3>Fraccions</h3>
+        <div class="formula-card"><strong>Format:</strong> introdueix fraccions com 3/4, -2/5 o nombres enters.</div>
+        <label>Fracció A<input type="text" id="frac-a" placeholder="Exemple: 3/4" required /></label>
+        <label>Operació<select id="frac-op"><option value="+">Suma</option><option value="-">Resta</option><option value="*">Multiplicació</option><option value="/">Divisió</option></select></label>
+        <label>Fracció B<input type="text" id="frac-b" placeholder="Exemple: 2/3" required /></label>
+        <button type="submit" class="primary-button">Calcular fracció</button>
+      </form>
+
+      <form id="equations-form" class="calculator-form" data-form="equations">
+        <h3>Equacions i polinomis</h3>
+        <label>Tipus<select id="equation-type"><option value="linear">Lineal: ax+b=0</option><option value="quadratic">Quadràtica: ax²+bx+c=0</option><option value="cubic">Cúbica numèrica: ax³+bx²+cx+d=0</option><option value="polynomial">Polinomi general: coeficients separats per comes</option></select></label>
+        <div id="equation-inputs" class="dynamic-inputs"></div>
+        <button type="submit" class="primary-button">Resoldre equació</button>
+      </form>
+
+      <form id="systems-form" class="calculator-form" data-form="systems">
+        <h3>Sistemes d’equacions</h3>
+        <label>Tipus<select id="system-type"><option value="2x2">Sistema 2x2</option><option value="3x3">Sistema 3x3</option></select></label>
+        <div id="system-inputs" class="dynamic-inputs"></div>
+        <button type="submit" class="primary-button">Resoldre sistema</button>
+      </form>
+
+      <form id="functions-form" class="calculator-form" data-form="functions">
+        <h3>Calculadora gràfica</h3>
+        <div class="formula-card"><strong>Funcions:</strong> lineal, quadràtica, cúbica, sinusoïdal i entrada f(x). També dona taula, arrels aproximades, màxims/mínims locals aproximats i tangent.</div>
+        <label>Tipus<select id="function-type"><option value="linear">Lineal: mx+n</option><option value="quadratic">Quadràtica: ax²+bx+c</option><option value="cubic">Cúbica: ax³+bx²+cx+d</option><option value="sinusoidal">Sinusoïdal: A·sin(Bx+C)+D</option><option value="custom">Personalitzada: f(x)</option></select></label>
+        <div id="function-inputs" class="dynamic-inputs"></div>
+        <div class="two-cols">
+          <label>X mín<input type="number" id="graph-xmin" step="any" value="-10" /></label>
+          <label>X màx<input type="number" id="graph-xmax" step="any" value="10" /></label>
+          <label>Punt tangent x₀<input type="number" id="tangent-x0" step="any" value="1" /></label>
+          <label>Mode angular<select id="graph-angle-mode"><option value="rad">Radians</option><option value="deg">Graus</option></select></label>
+        </div>
+        <button type="submit" class="primary-button">Dibuixar i estudiar</button>
+      </form>
+
+      <form id="calculus-form" class="calculator-form" data-form="calculus">
+        <h3>Càlcul numèric</h3>
+        <div class="formula-card"><strong>Nota:</strong> derivada i integral numèriques, no CAS simbòlic complet.</div>
+        <label>Operació<select id="calculus-type"><option value="derivative">Derivada aproximada f'(x₀)</option><option value="integral">Integral definida aproximada</option></select></label>
+        <label>Funció f(x)<input type="text" id="calculus-expression" placeholder="Exemple: x^2+sin(x)" required /></label>
+        <div class="two-cols">
+          <label>x₀ / límit inferior<input type="number" id="calc-a" step="any" value="0" /></label>
+          <label>Límit superior<input type="number" id="calc-b" step="any" value="1" /></label>
+        </div>
+        <button type="submit" class="primary-button">Calcular</button>
+      </form>
+
+
+      <form id="physics-form" class="calculator-form" data-form="physics">
+        <h3>Física ESO i Batxillerat</h3>
+        <div class="formula-card"><strong>Inclou:</strong> mecànica, energia, fluids, ones, electricitat, calor, gasos i òptica bàsica.</div>
+        <label>Apartat de física<select id="physics-type">
+          <optgroup label="Mecànica"><option value="mru">MRU: v = Δx/Δt</option><option value="mrua-v">MRUA: v = v₀+at</option><option value="mrua-x">MRUA: x = x₀+v₀t+½at²</option><option value="newton">Newton: F = ma</option><option value="weight">Pes: P = mg</option><option value="momentum">Quantitat de moviment: p = mv</option><option value="centripetal">Centrípeta: Fc = mv²/r</option></optgroup>
+          <optgroup label="Energia"><option value="work">Treball: W = Fd cosθ</option><option value="power">Potència: P = W/t</option><option value="kinetic">Energia cinètica</option><option value="potential">Energia potencial</option><option value="spring">Energia elàstica</option></optgroup>
+          <optgroup label="Fluids"><option value="density">Densitat</option><option value="pressure">Pressió</option><option value="hydrostatic">Pressió hidrostàtica</option><option value="buoyancy">Arquímedes</option></optgroup>
+          <optgroup label="Ones i òptica"><option value="wave">v = λf</option><option value="period">T = 1/f</option><option value="lens">Lent prima</option></optgroup>
+          <optgroup label="Electricitat"><option value="ohm">Ohm</option><option value="epower">Potència elèctrica</option><option value="rseries">Resistències en sèrie</option><option value="rparallel">Resistències en paral·lel</option><option value="coulomb">Coulomb</option></optgroup>
+          <optgroup label="Calor i gasos"><option value="heat">Q = mcΔT</option><option value="latent">Q = mL</option><option value="idealgas">PV = nRT</option></optgroup>
+        </select></label>
+        <div id="physics-inputs" class="dynamic-inputs"></div>
+        <button type="submit" class="primary-button">Calcular física pas a pas</button>
+      </form>
+
+      <form id="chemistry-form" class="calculator-form" data-form="chemistry">
+        <h3>Química ESO i Batxillerat</h3>
+        <div class="formula-card"><strong>Inclou:</strong> mols, massa molar, dissolucions, gasos, pH, estequiometria bàsica i composició percentual.</div>
+        <label>Apartat de química<select id="chemistry-type">
+          <optgroup label="Mols i massa"><option value="molar-mass">Massa molar</option><option value="moles-mass">n = m/M</option><option value="mass-moles">m = nM</option><option value="particles">N = n·NA</option><option value="percent-comp">Composició percentual</option></optgroup>
+          <optgroup label="Dissolucions"><option value="molarity">Molaritat</option><option value="dilution">Dilució</option><option value="mass-percent">% en massa</option><option value="sol-density">Densitat de dissolució</option></optgroup>
+          <optgroup label="Àcid-base"><option value="ph-h">pH a partir de [H⁺]</option><option value="h-ph">[H⁺] a partir del pH</option><option value="poh">pOH i pH</option></optgroup>
+          <optgroup label="Gasos"><option value="gas-n">n = PV/RT</option><option value="gas-v">V = nRT/P</option></optgroup>
+          <optgroup label="Estequiometria"><option value="stoich">Relació molar simple</option><option value="limiting">Reactiu limitant simple</option></optgroup>
+        </select></label>
+        <div id="chemistry-inputs" class="dynamic-inputs"></div>
+        <button type="submit" class="primary-button">Calcular química pas a pas</button>
+      </form>
+
+      <form id="complex-form" class="calculator-form" data-form="complex">
+        <h3>Nombres complexos</h3>
+        <div class="formula-card"><strong>Format:</strong> z = a + bi. Calcula operacions i forma polar.</div>
+        <div class="two-cols">
+          <label>a<input type="number" id="z1-re" step="any" value="3" /></label>
+          <label>b<input type="number" id="z1-im" step="any" value="4" /></label>
+          <label>c<input type="number" id="z2-re" step="any" value="1" /></label>
+          <label>d<input type="number" id="z2-im" step="any" value="-2" /></label>
+        </div>
+        <label>Operació<select id="complex-op"><option value="+">z₁ + z₂</option><option value="-">z₁ - z₂</option><option value="*">z₁ · z₂</option><option value="/">z₁ / z₂</option><option value="polar">Forma polar de z₁</option></select></label>
+        <button type="submit" class="primary-button">Calcular complexos</button>
+      </form>
+
+      <form id="matrix-form" class="calculator-form" data-form="matrix">
+        <h3>Matrius 2x2 i 3x3</h3>
+        <label>Operació<select id="matrix-op"><option value="det2">Determinant 2x2</option><option value="inv2">Inversa 2x2</option><option value="mul2">Producte 2x2 · 2x2</option><option value="det3">Determinant 3x3</option></select></label>
+        <div id="matrix-inputs" class="dynamic-inputs"></div>
+        <button type="submit" class="primary-button">Calcular matriu</button>
+      </form>
+
+      <form id="vectors-form" class="calculator-form" data-form="vectors">
+        <h3>Vectors 2D/3D</h3>
+        <label>Operació<select id="vector-op"><option value="add">Suma</option><option value="dot">Producte escalar</option><option value="cross">Producte vectorial 3D</option><option value="modulus">Mòdul de v</option><option value="angle">Angle entre vectors</option></select></label>
+        <div class="two-cols">
+          <label>v = x,y,z<input type="text" id="vector-a" value="1,2,3" /></label>
+          <label>w = x,y,z<input type="text" id="vector-b" value="4,5,6" /></label>
+        </div>
+        <button type="submit" class="primary-button">Calcular vectors</button>
+      </form>
+
+      <form id="statistics-form" class="calculator-form" data-form="statistics">
+        <h3>Estadística</h3>
+        <div class="formula-card"><strong>Dades:</strong> escriu nombres separats per comes.</div>
+        <label>Dades<input type="text" id="stats-data" value="2,4,4,5,8" required /></label>
+        <button type="submit" class="primary-button">Analitzar dades</button>
+      </form>
+
+      <form id="combinatorics-form" class="calculator-form" data-form="combinatorics">
+        <h3>Combinatòria i probabilitat bàsica</h3>
+        <label>Operació<select id="comb-op"><option value="factorial">Factorial n!</option><option value="perm">Permutacions P(n,r)</option><option value="comb">Combinacions C(n,r)</option><option value="prob-union">Probabilitat unió: P(A∪B)</option></select></label>
+        <div class="two-cols">
+          <label>n / P(A)<input type="number" id="comb-n" step="any" value="5" /></label>
+          <label>r / P(B)<input type="number" id="comb-r" step="any" value="2" /></label>
+          <label>P(A∩B)<input type="number" id="comb-intersection" step="any" value="0.1" /></label>
+        </div>
+        <button type="submit" class="primary-button">Calcular combinatòria</button>
+      </form>
+
+      <form id="numbertheory-form" class="calculator-form" data-form="numbertheory">
+        <h3>Nombres</h3>
+        <label>Operació<select id="number-op"><option value="prime-factors">Factors primers</option><option value="gcd-lcm">MCD i mcm</option><option value="random">Nombre aleatori enter</option></select></label>
+        <div class="two-cols">
+          <label>A<input type="number" id="num-a" step="1" value="84" /></label>
+          <label>B<input type="number" id="num-b" step="1" value="126" /></label>
+        </div>
+        <button type="submit" class="primary-button">Calcular nombres</button>
+      </form>
+
+      <form id="geometry-form" class="calculator-form" data-form="geometry">
+        <h3>Geometria</h3>
+        <label>Tipus<select id="geometry-type">
+          <optgroup label="Figures planes">
+            <option value="square">Quadrat</option><option value="rectangle">Rectangle</option><option value="triangle">Triangle</option><option value="trapezoid">Trapezi</option><option value="circle">Cercle</option><option value="regular-polygon">Polígon regular</option>
+          </optgroup>
+          <optgroup label="Volums">
+            <option value="cube">Cub</option><option value="rect-prism">Prisma rectangular</option><option value="cylinder">Cilindre</option><option value="cone">Con</option><option value="sphere">Esfera</option>
+          </optgroup>
+          <optgroup label="Pitàgores">
+            <option value="pythagoras-h">Hipotenusa</option><option value="pythagoras-leg">Catet</option>
+          </optgroup>
+        </select></label>
+        <div id="geometry-inputs" class="dynamic-inputs"></div>
+        <button type="submit" class="primary-button">Calcular geometria</button>
+      </form>
+
+      <form id="units-form" class="calculator-form" data-form="units">
+        <h3>Conversor d’unitats</h3>
+        <label>Magnitud<select id="unit-category"><option value="length">Longitud</option><option value="mass">Massa</option><option value="capacity">Capacitat</option><option value="area">Superfície</option><option value="volume">Volum</option><option value="temperature">Temperatura</option><option value="speed">Velocitat</option><option value="energy">Energia</option></select></label>
+        <label>Valor<input type="number" id="unit-value" step="any" value="1" required /></label>
+        <div class="two-cols"><label>De<select id="unit-from"></select></label><label>A<select id="unit-to"></select></label></div>
+        <button type="submit" class="primary-button">Convertir</button>
+      </form>
+
+      <form id="formulas-form" class="calculator-form" data-form="formulas">
+        <h3>Fórmules matemàtiques i físiques</h3>
+        <label>Àrea<select id="formula-category"><option value="math">Matemàtiques</option><option value="physics">Física</option><option value="chemistry">Química</option></select></label>
+        <label>Fórmula<select id="formula-select"></select></label>
+        <button type="submit" class="primary-button">Veure fórmula</button>
+      </form>
+
+      <form id="periodic-form" class="calculator-form" data-form="periodic">
+        <h3>Taula periòdica bàsica</h3>
+        <div class="formula-card">
+          <strong>Objectiu:</strong> consultar elements habituals d’ESO/Batxillerat i usar-los per calcular masses molars.
+        </div>
+
+        <label>
+          Element
+          <select id="periodic-element"></select>
+        </label>
+
+        <div id="periodic-card" class="periodic-card"></div>
+
+        <label>
+          Fórmula per calcular massa molar
+          <input id="periodic-formula" value="Ca(OH)2" placeholder="Exemple: H2O, CO2, Ca(OH)2, C6H12O6" />
+        </label>
+
+        <button type="submit" class="primary-button">Consultar i calcular</button>
+      </form>
+
+      <form id="study-form" class="calculator-form" data-form="study">
+        <h3>Mode estudi</h3>
+        <div class="formula-card">
+          <strong>Repàs ràpid:</strong> genera una fitxa d’estudi amb fórmules clau, passos i errors típics.
+        </div>
+
+        <label>
+          Tema
+          <select id="study-topic">
+            <option value="mechanics">Física: mecànica</option>
+            <option value="energy">Física: energia i treball</option>
+            <option value="electricity">Física: electricitat</option>
+            <option value="waves">Física: ones i òptica</option>
+            <option value="chem-moles">Química: mols i massa molar</option>
+            <option value="solutions">Química: dissolucions</option>
+            <option value="acid-base">Química: pH i àcid-base</option>
+            <option value="stoich">Química: estequiometria</option>
+          </select>
+        </label>
+
+        <button type="submit" class="primary-button">Generar fitxa d’estudi</button>
+      </form>
+
+
+
+      <form id="polar-form" class="calculator-form" data-form="polar">
+        <h3>Gràfica polar</h3>
+        <div class="formula-card">
+          <strong>Format:</strong> r = f(θ). Escriu theta com <span class="math">t</span>. Exemple: <span class="math">2+sin(t)</span>.
+        </div>
+        <label>r(t)<input id="polar-expression" value="2+sin(t)" placeholder="Exemple: 3*cos(2*t)" /></label>
+        <div class="two-cols">
+          <label>t mín<input type="number" id="polar-tmin" value="0" step="any" /></label>
+          <label>t màx<input type="number" id="polar-tmax" value="6.283185" step="any" /></label>
+          <label>Zoom inicial<input type="number" id="polar-scale" value="5" step="any" /></label>
+          <label>Mode angular<select id="polar-angle-mode"><option value="rad">Radians</option><option value="deg">Graus</option></select></label>
+        </div>
+        <button type="submit" class="primary-button">Dibuixar polar</button>
+      </form>
+
+      <form id="parametric-form" class="calculator-form" data-form="parametric">
+        <h3>Gràfica paramètrica</h3>
+        <div class="formula-card">
+          <strong>Format:</strong> x = f(t), y = g(t). Exemple de circumferència: x=cos(t), y=sin(t).
+        </div>
+        <label>x(t)<input id="param-x" value="cos(t)" /></label>
+        <label>y(t)<input id="param-y" value="sin(t)" /></label>
+        <div class="two-cols">
+          <label>t mín<input type="number" id="param-tmin" value="0" step="any" /></label>
+          <label>t màx<input type="number" id="param-tmax" value="6.283185" step="any" /></label>
+          <label>Zoom inicial<input type="number" id="param-scale" value="2" step="any" /></label>
+          <label>Mode angular<select id="param-angle-mode"><option value="rad">Radians</option><option value="deg">Graus</option></select></label>
+        </div>
+        <button type="submit" class="primary-button">Dibuixar paramètrica</button>
+      </form>
+
+      <form id="theme-form" class="calculator-form" data-form="theme">
+        <h3>Accessibilitat i aparença</h3>
+        <div class="formula-card">
+          <strong>Objectiu:</strong> adaptar la interfície a mòbil, tauleta i estudi prolongat.
+        </div>
+        <label>Mode visual
+          <select id="theme-mode">
+            <option value="light">Clar</option>
+            <option value="dark">Fosc</option>
+            <option value="contrast">Alt contrast</option>
+          </select>
+        </label>
+        <label>Mida de lletra
+          <select id="font-scale">
+            <option value="normal">Normal</option>
+            <option value="large">Gran</option>
+            <option value="xlarge">Molt gran</option>
+          </select>
+        </label>
+        <button type="submit" class="primary-button">Aplicar preferències</button>
+      </form>
+
+
+      <form id="cas-form" class="calculator-form" data-form="cas">
+        <h3>CAS simbòlic parcial ampliat</h3>
+        <div class="formula-card">
+          <strong>Important:</strong> CAS educatiu per a patrons d’ESO/Batxillerat. No és un CAS professional complet.
+        </div>
+        <label>Operació
+          <select id="cas-operation">
+            <option value="simplify-poly">Simplificar polinomi</option>
+            <option value="factor-quadratic">Factoritzar quadràtica ax²+bx+c</option>
+            <option value="difference-squares">Factoritzar diferència de quadrats</option>
+            <option value="expand-binomial">Desenvolupar (ax+b)²</option>
+            <option value="simplify-rational">Simplificar fracció algebraica simple</option>
+            <option value="derivative-poly">Derivar polinomi</option>
+            <option value="integral-poly">Integrar polinomi</option>
+            <option value="chain-rule">Derivada amb regla de la cadena</option>
+            <option value="product-rule">Derivada amb regla del producte</option>
+            <option value="immediate-integral">Integrals immediates</option>
+          </select>
+        </label>
+        <div id="cas-inputs" class="dynamic-inputs"></div>
+        <button type="submit" class="primary-button">Aplicar CAS simbòlic</button>
+      </form>
+
+
+      <form id="analytic-form" class="calculator-form" data-form="analytic">
+        <h3>Vectors i rectes en el pla</h3>
+        <div class="formula-card">
+          <strong>Objectiu:</strong> obtenir les formes vectorial, paramètrica, contínua, explícita i general de la recta, i dibuixar-la.
+        </div>
+
+        <label>
+          Dades d’entrada
+          <select id="analytic-type">
+            <option value="point-vector">Punt i vector director</option>
+            <option value="two-points">Dos punts</option>
+            <option value="general">Equació general Ax + By + C = 0</option>
+            <option value="explicit">Equació explícita y = mx + n</option>
+            <option value="vector-ops">Operacions amb vectors directors</option>
+          </select>
+        </label>
+
+        <div id="analytic-inputs" class="dynamic-inputs"></div>
+
+        <button type="submit" class="primary-button">Calcular recta i dibuixar</button>
+      </form>
+
+
+      <form id="analytic-tools-form" class="calculator-form" data-form="analytic-tools">
+        <h3>Geometria analítica avançada</h3>
+        <div class="formula-card">
+          <strong>Inclou:</strong> intersecció de rectes, distància punt-recta, angle entre rectes, paral·lelisme, perpendicularitat, rectes 3D i plans.
+        </div>
+
+        <label>
+          Operació
+          <select id="analytic-tool-type">
+            <optgroup label="Rectes en 2D">
+              <option value="intersection-2d">Intersecció de dues rectes 2D</option>
+              <option value="distance-point-line">Distància punt-recta</option>
+              <option value="angle-lines">Angle entre dues rectes</option>
+              <option value="line-relation">Relació entre rectes: paral·leles, perpendiculars o secants</option>
+            </optgroup>
+            <optgroup label="Vectors i rectes en 3D">
+              <option value="line3d">Recta 3D a partir d’un punt i vector director</option>
+              <option value="plane3d">Pla 3D a partir d’un punt i vector normal</option>
+              <option value="point-plane-distance">Distància punt-pla</option>
+              <option value="line-plane-intersection">Intersecció recta-pla</option>
+            </optgroup>
+          </select>
+        </label>
+
+        <div id="analytic-tools-inputs" class="dynamic-inputs"></div>
+        <button type="submit" class="primary-button">Calcular geometria analítica</button>
+      </form>
+
+
+      <form id="multi-graphs-form" class="calculator-form" data-form="multi-graphs">
+        <h3>Múltiples gràfiques</h3>
+        <div class="formula-card">Dibuixa diverses funcions en un mateix pla. Una funció per línia.</div>
+        <label>Tipus
+          <select id="mg-type">
+            <option value="cartesian">Cartesianes: y = f(x)</option>
+            <option value="polar">Polars: r = f(t)</option>
+            <option value="parametric">Paramètriques: x(t); y(t)</option>
+          </select>
+        </label>
+        <label>Funcions
+          <textarea id="mg-expressions" rows="6">x^2-4
+sin(x)
+2*x+1</textarea>
+        </label>
+        <div class="two-cols">
+          <label>Mínim<input type="number" id="mg-min" value="-10" step="any"></label>
+          <label>Màxim<input type="number" id="mg-max" value="10" step="any"></label>
+          <label>Zoom<input type="number" id="mg-scale" value="10" step="any"></label>
+          <label>Mode angular<select id="mg-angle"><option value="rad">Radians</option><option value="deg">Graus</option></select></label>
+        </div>
+        <button type="submit" class="primary-button">Dibuixar múltiples funcions</button>
+      </form>
+
+      <form id="custom-functions-form" class="calculator-form" data-form="custom-functions">
+        <h3>Funcions pròpies</h3>
+        <div class="formula-card">Desa funcions al navegador per reutilitzar-les en exercicis.</div>
+        <label>Nom de la funció<input id="cf-name" value="F" maxlength="12"></label>
+        <label>Expressió en x<input id="cf-expression" value="x^2-4"></label>
+        <button type="submit" class="primary-button">Desar funció</button>
+      </form>
+
+      <form id="rational-plus-form" class="calculator-form" data-form="rational-plus">
+        <h3>Nombres racionals avançats</h3>
+        <label>Operació
+          <select id="rat-op">
+            <option value="decimal-to-fraction">Decimal → fracció</option>
+            <option value="power">Potència de fracció</option>
+            <option value="compare">Comparar fraccions</option>
+          </select>
+        </label>
+        <div class="two-cols">
+          <label>Valor A<input id="rat-a" value="0.75"></label>
+          <label>Valor B / exponent<input id="rat-b" value="2"></label>
+        </div>
+        <button type="submit" class="primary-button">Calcular racional</button>
+      </form>
+
+      <form id="complex-plus-form" class="calculator-form" data-form="complex-plus">
+        <h3>Nombres complexos avançats</h3>
+        <label>Operació
+          <select id="cx-op">
+            <option value="power">Potència amb De Moivre</option>
+            <option value="roots">Arrels n-èsimes</option>
+            <option value="plot">Representar al pla complex</option>
+          </select>
+        </label>
+        <div class="two-cols">
+          <label>Part real a<input type="number" id="cx-re" value="1" step="any"></label>
+          <label>Part imaginària b<input type="number" id="cx-im" value="1" step="any"></label>
+          <label>n<input type="number" id="cx-n" value="3" step="1"></label>
+        </div>
+        <button type="submit" class="primary-button">Calcular complex</button>
+      </form>
+
+      <form id="number-plus-form" class="calculator-form" data-form="number-plus">
+        <h3>Teoria de nombres avançada</h3>
+        <label>Operació
+          <select id="nt-op">
+            <option value="is-prime">Comprovar si és primer</option>
+            <option value="mod">Congruència a mod n</option>
+            <option value="inverse">Invers modular</option>
+            <option value="bezout">Identitat de Bézout</option>
+          </select>
+        </label>
+        <div class="two-cols">
+          <label>a<input type="number" id="nt-a" value="17" step="1"></label>
+          <label>b / n<input type="number" id="nt-b" value="5" step="1"></label>
+        </div>
+        <button type="submit" class="primary-button">Calcular teoria de nombres</button>
+      </form>
+
+
+      <form id="implicit-form" class="calculator-form" data-form="implicit">
+        <h3>Gràfiques implícites</h3>
+        <div class="formula-card">Dibuixa F(x,y)=0. Exemples: x^2+y^2-25, x^2-y^2-1, sin(x)+cos(y).</div>
+        <label>Expressions F(x,y), una per línia<textarea id="implicit-expressions" rows="5">x^2+y^2-25
+x^2-y^2-1</textarea></label>
+        <div class="two-cols">
+          <label>X/Y mín<input type="number" id="imp-min" value="-10" step="any"></label>
+          <label>X/Y màx<input type="number" id="imp-max" value="10" step="any"></label>
+          <label>Resolució<input type="number" id="imp-res" value="90" step="1"></label>
+        </div>
+        <button type="submit" class="primary-button">Dibuixar implícites</button>
+      </form>
+
+      <form id="function-analysis-plus-form" class="calculator-form" data-form="function-analysis-plus">
+        <h3>Interseccions i anàlisi de dues funcions</h3>
+        <label>f(x)<input id="fa-f" value="x^2-4"></label>
+        <label>g(x)<input id="fa-g" value="2*x-1"></label>
+        <div class="two-cols">
+          <label>x mín<input type="number" id="fa-min" value="-10" step="any"></label>
+          <label>x màx<input type="number" id="fa-max" value="10" step="any"></label>
+        </div>
+        <button type="submit" class="primary-button">Analitzar f i g</button>
+      </form>
+
+
+      <form id="cas-plus-form" class="calculator-form" data-form="cas-plus">
+        <h3>CAS simbòlic ampliat</h3>
+        <div class="formula-card">Derivades simbòliques amb patrons, integrals immediates ampliades i resolució d’equacions amb mètodes simbòlics/numèrics.</div>
+        <label>Operació
+          <select id="casp-op">
+            <option value="derive-pattern">Derivada simbòlica per patrons</option>
+            <option value="integral-pattern">Integral simbòlica per patrons</option>
+            <option value="solve-arbitrary">Solucionar equació arbitrària f(x)=0 numèricament</option>
+          </select>
+        </label>
+        <label>Expressió<input id="casp-expression" value="sin(x^2)"></label>
+        <div class="two-cols">
+          <label>x mín<input type="number" id="casp-min" value="-10" step="any"></label>
+          <label>x màx<input type="number" id="casp-max" value="10" step="any"></label>
+        </div>
+        <button type="submit" class="primary-button">Aplicar CAS +</button>
+      </form>
+
+    </aside>
+
+    <section class="panel result-panel" aria-live="polite" aria-labelledby="procedure-title">
+      <div class="result-header">
+        <div>
+          <p class="eyebrow">Resultat i motor pedagògic</p>
+          <h2 id="procedure-title">Procediment</h2>
+        </div>
+        <span class="status-pill" id="status-pill">Esperant dades</span>
+      </div>
+
+      <div id="result-box" class="result-box">
+        <p>Tria un mòdul, introdueix les dades i prem el botó. Aquí apareixeran el resultat, el procediment i, quan pertoqui, la gràfica.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <p>Versió educativa inspirada en calculadores científiques 991. Inclou matemàtiques, física i química; no inclou mòdul de programació ni CAS simbòlic complet.</p>
+  </footer>
+
+  <script src="./app.js"></script>
+</body>
+</html>
