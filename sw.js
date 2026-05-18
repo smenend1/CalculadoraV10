@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "calculadora-educativa-plus-v23";
+const CACHE_NAME = "calculadora-educativa-plus-v25";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -9,7 +9,25 @@ const APP_SHELL = [
   "./manifest.json",
   "./icon-192.png",
   "./icon-512.png"
-];
+
+  "./formula-images/algebra.png",
+  "./formula-images/trigonometry.png",
+  "./formula-images/equations.png",
+  "./formula-images/analytic-geometry.png",
+  "./formula-images/plane-geometry.png",
+  "./formula-images/solid-geometry.png",
+  "./formula-images/physics.png",
+  "./formula-images/chemistry.png",
+  "./formula-images/calculus.png",
+  "./formula-images/combinatorics.png",
+  "./formula-images/complex-formulas.png",
+  "./formula-images/functions.png",
+  "./formula-images/matrices.png",
+  "./formula-images/number-theory.png",
+  "./formula-images/probability.png",
+  "./formula-images/sequences.png",
+  "./formula-images/statistics.png",
+  "./formula-images/vectors-formulas.png",];
 
 self.addEventListener("install", event => {
   event.waitUntil(

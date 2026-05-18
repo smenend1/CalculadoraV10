@@ -2940,3 +2940,745 @@ if ("serviceWorker" in navigator) {
     }, true);
   }
 })();
+
+
+/* V24: més geometria i compendi ampliat de fórmules */
+(function(){
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const fmt = (typeof formatNumber === "function") ? formatNumber : (n)=>Number(n).toLocaleString("ca-ES",{maximumFractionDigits:6});
+  const pos = (v,name)=>{ if(!(Number.isFinite(v) && v>0)) throw new Error(name + " ha de ser positiu."); };
+  const num = (id)=> {
+    const el = $(id);
+    if(!el) throw new Error("Falta el camp " + id + ".");
+    const value = Number(String(el.value).replace(",", "."));
+    if(!Number.isFinite(value)) throw new Error("El camp " + id + " ha de ser numèric.");
+    return value;
+  };
+  const safeRender = payload => typeof render === "function" ? render(payload) : console.log(payload);
+  const safeError = (title,msg) => typeof renderError === "function" ? renderError(title,msg) : console.error(title,msg);
+
+  function L(label, id, value, extra=''){
+    return `<label>${label}<input type="number" id="${id}" value="${value}" step="any" ${extra}></label>`;
+  }
+
+  const geometryTemplatesV24 = {
+    square: L("Costat", "g-a", 5),
+    rectangle: L("Base", "g-a", 8) + L("Altura", "g-b", 3),
+    triangle: L("Base", "g-a", 10) + L("Altura", "g-b", 6),
+    "equilateral-triangle": L("Costat", "g-a", 6),
+    parallelogram: L("Base", "g-a", 8) + L("Altura", "g-b", 5),
+    rhombus: L("Diagonal major D", "g-a", 10) + L("Diagonal menor d", "g-b", 8),
+    kite: L("Diagonal major D", "g-a", 12) + L("Diagonal menor d", "g-b", 7),
+    trapezoid: L("Base major", "g-a", 10) + L("Base menor", "g-b", 6) + L("Altura", "g-c", 4),
+    circle: L("Radi", "g-a", 5),
+    semicircle: L("Radi", "g-a", 5),
+    annulus: L("Radi exterior R", "g-a", 7) + L("Radi interior r", "g-b", 3),
+    ellipse: L("Semieix major a", "g-a", 6) + L("Semieix menor b", "g-b", 4),
+    sector: L("Radi", "g-a", 6) + L("Angle central (graus)", "g-b", 60),
+    "regular-polygon": L("Nombre de costats n", "g-a", 6, 'step="1"') + L("Costat", "g-b", 4) + L("Apotema", "g-c", 3.46),
+    cube: L("Costat", "g-a", 4),
+    "rect-prism": L("Llargada", "g-a", 8) + L("Amplada", "g-b", 5) + L("Altura", "g-c", 3),
+    prism: L("Àrea de la base", "g-a", 24) + L("Altura", "g-b", 10),
+    pyramid: L("Àrea de la base", "g-a", 36) + L("Altura", "g-b", 12),
+    cylinder: L("Radi", "g-a", 3) + L("Altura", "g-b", 7),
+    cone: L("Radi", "g-a", 3) + L("Altura", "g-b", 7),
+    sphere: L("Radi", "g-a", 6),
+    "frustum-cone": L("Radi major R", "g-a", 6) + L("Radi menor r", "g-b", 3) + L("Altura", "g-c", 8),
+    "pythagoras-h": L("Catet a", "g-a", 3) + L("Catet b", "g-b", 4),
+    "pythagoras-leg": L("Hipotenusa", "g-a", 5) + L("Catet conegut", "g-b", 4)
+  };
+
+  function ensureGeometryOptionsV24(){
+    const select = $("geometry-type");
+    if(!select) return;
+    select.innerHTML = `
+      <optgroup label="Figures planes">
+        <option value="square">Quadrat</option>
+        <option value="rectangle">Rectangle</option>
+        <option value="triangle">Triangle</option>
+        <option value="equilateral-triangle">Triangle equilàter</option>
+        <option value="parallelogram">Paral·lelogram</option>
+        <option value="rhombus">Rombe</option>
+        <option value="kite">Deltoide / estel</option>
+        <option value="trapezoid">Trapezi</option>
+        <option value="circle">Cercle</option>
+        <option value="semicircle">Semicercle</option>
+        <option value="annulus">Corona circular</option>
+        <option value="ellipse">El·lipse</option>
+        <option value="sector">Sector circular</option>
+        <option value="regular-polygon">Polígon regular</option>
+      </optgroup>
+      <optgroup label="Volums i superfícies">
+        <option value="cube">Cub</option>
+        <option value="rect-prism">Prisma rectangular</option>
+        <option value="prism">Prisma (àrea base coneguda)</option>
+        <option value="pyramid">Piràmide (àrea base coneguda)</option>
+        <option value="cylinder">Cilindre</option>
+        <option value="cone">Con</option>
+        <option value="sphere">Esfera</option>
+        <option value="frustum-cone">Tronc de con</option>
+      </optgroup>
+      <optgroup label="Pitàgores">
+        <option value="pythagoras-h">Hipotenusa</option>
+        <option value="pythagoras-leg">Catet</option>
+      </optgroup>
+    `;
+  }
+  function updateGeometryInputsV24(){
+    const box = $("geometry-inputs");
+    const select = $("geometry-type");
+    if(!box || !select) return;
+    box.innerHTML = geometryTemplatesV24[select.value] || '<div class="warning-box">Aquesta figura encara no té formulari definit.</div>';
+  }
+
+  function renderGeometryV24(type){
+    const a = num("g-a");
+    const b = $("g-b") ? num("g-b") : null;
+    const c = $("g-c") ? num("g-c") : null;
+    let title="", summary="", steps=[], extra="";
+    const addFormula = (html) => extra = `<div class="formula-card"><strong>Fórmula:</strong> <span class="math">${html}</span></div>`;
+
+    if(type === "square"){ pos(a,"El costat"); title="Quadrat"; summary=`Àrea = <strong>${fmt(a*a)}</strong>, perímetre = <strong>${fmt(4*a)}</strong>`; addFormula("A=costat²; P=4·costat"); steps=["L'àrea és costat per costat.", "El perímetre és la suma dels quatre costats iguals."]; }
+    else if(type === "rectangle"){ pos(a,"La base"); pos(b,"L'altura"); title="Rectangle"; summary=`Àrea = <strong>${fmt(a*b)}</strong>, perímetre = <strong>${fmt(2*(a+b))}</strong>`; addFormula("A=b·h; P=2(b+h)"); steps=["Multipliquem base i altura per obtenir l'àrea.","Sumem base i altura i multipliquem per 2 per obtenir el perímetre."]; }
+    else if(type === "triangle"){ pos(a,"La base"); pos(b,"L'altura"); title="Triangle"; summary=`Àrea = <strong>${fmt(a*b/2)}</strong>`; addFormula("A=(b·h)/2"); steps=["L'àrea del triangle és la meitat del rectangle equivalent de base b i altura h."]; }
+    else if(type === "equilateral-triangle"){ pos(a,"El costat"); const area = Math.sqrt(3)/4*a*a; title="Triangle equilàter"; summary=`Àrea = <strong>${fmt(area)}</strong>, perímetre = <strong>${fmt(3*a)}</strong>, altura = <strong>${fmt(Math.sqrt(3)*a/2)}</strong>`; addFormula("A=(√3/4)c²; h=(√3/2)c"); steps=["En un triangle equilàter tots tres costats són iguals.","L'altura divideix el triangle en dos triangles rectangles especials 30°-60°-90°."]; }
+    else if(type === "parallelogram"){ pos(a,"La base"); pos(b,"L'altura"); title="Paral·lelogram"; summary=`Àrea = <strong>${fmt(a*b)}</strong>`; addFormula("A=b·h"); steps=["L'àrea coincideix amb la d'un rectangle de la mateixa base i altura."]; }
+    else if(type === "rhombus"){ pos(a,"La diagonal major"); pos(b,"La diagonal menor"); title="Rombe"; summary=`Àrea = <strong>${fmt(a*b/2)}</strong>`; addFormula("A=(D·d)/2"); steps=["L'àrea d'un rombe és la meitat del producte de les diagonals."]; }
+    else if(type === "kite"){ pos(a,"La diagonal major"); pos(b,"La diagonal menor"); title="Deltoide / estel"; summary=`Àrea = <strong>${fmt(a*b/2)}</strong>`; addFormula("A=(D·d)/2"); steps=["La fórmula és la mateixa que per al rombe: la meitat del producte de les diagonals."]; }
+    else if(type === "trapezoid"){ pos(a,"La base major"); pos(b,"La base menor"); pos(c,"L'altura"); title="Trapezi"; summary=`Àrea = <strong>${fmt((a+b)*c/2)}</strong>`; addFormula("A=((B+b)·h)/2"); steps=["Fem la mitjana de les dues bases.","Multipliquem aquest valor per l'altura."]; }
+    else if(type === "circle"){ pos(a,"El radi"); title="Cercle"; summary=`Àrea = <strong>${fmt(Math.PI*a*a)}</strong>, longitud = <strong>${fmt(2*Math.PI*a)}</strong>`; addFormula("A=πr²; L=2πr"); steps=["L'àrea del cercle és proporcional al quadrat del radi.","La longitud de la circumferència és 2π vegades el radi."]; }
+    else if(type === "semicircle"){ pos(a,"El radi"); title="Semicercle"; summary=`Àrea = <strong>${fmt(Math.PI*a*a/2)}</strong>, perímetre = <strong>${fmt(Math.PI*a + 2*a)}</strong>`; addFormula("A=(πr²)/2; P=πr+2r"); steps=["L'àrea és la meitat de la d'un cercle complet.","El perímetre és l'arc semicircular més el diàmetre."]; }
+    else if(type === "annulus"){ pos(a,"El radi exterior"); pos(b,"El radi interior"); if(a<=b) throw new Error("El radi exterior ha de ser més gran que l'interior."); title="Corona circular"; summary=`Àrea = <strong>${fmt(Math.PI*(a*a-b*b))}</strong>`; addFormula("A=π(R²-r²)"); steps=["Restem l'àrea del cercle petit a l'àrea del cercle gran."]; }
+    else if(type === "ellipse"){ pos(a,"El semieix major"); pos(b,"El semieix menor"); title="El·lipse"; summary=`Àrea = <strong>${fmt(Math.PI*a*b)}</strong>`; addFormula("A=πab"); steps=["Una el·lipse es calcula amb el producte dels dos semieixos i π."]; }
+    else if(type === "sector"){ pos(a,"El radi"); pos(b,"L'angle"); title="Sector circular"; summary=`Àrea = <strong>${fmt(Math.PI*a*a*b/360)}</strong>, arc = <strong>${fmt(2*Math.PI*a*b/360)}</strong>`; addFormula("A=(θ/360)·πr²; arc=(θ/360)·2πr"); steps=["Calculem la fracció del cercle que representa l'angle central.","Apliquem aquesta mateixa fracció a l'àrea i a la longitud de l'arc."]; }
+    else if(type === "regular-polygon"){ pos(a,"El nombre de costats"); pos(b,"El costat"); pos(c,"L'apotema"); title="Polígon regular"; summary=`Perímetre = <strong>${fmt(a*b)}</strong>, àrea = <strong>${fmt(a*b*c/2)}</strong>`; addFormula("P=n·c; A=(P·apotema)/2"); steps=["Primer trobem el perímetre multiplicant nombre de costats per costat.","Després multipliquem el perímetre per l'apotema i dividim per 2."]; }
+    else if(type === "cube"){ pos(a,"El costat"); title="Cub"; summary=`Volum = <strong>${fmt(a**3)}</strong>, superfície = <strong>${fmt(6*a*a)}</strong>`; addFormula("V=c³; S=6c²"); steps=["El volum és costat al cub.","La superfície total és la suma de les 6 cares quadrades."]; }
+    else if(type === "rect-prism"){ pos(a,"La llargada"); pos(b,"L'amplada"); pos(c,"L'altura"); title="Prisma rectangular"; summary=`Volum = <strong>${fmt(a*b*c)}</strong>, superfície = <strong>${fmt(2*(a*b+a*c+b*c))}</strong>`; addFormula("V=l·a·h; S=2(la+lh+ah)"); steps=["Multipliquem les tres dimensions per trobar el volum.","La superfície total suma les àrees de les sis cares."]; }
+    else if(type === "prism"){ pos(a,"L'àrea de la base"); pos(b,"L'altura"); title="Prisma"; summary=`Volum = <strong>${fmt(a*b)}</strong>`; addFormula("V=A_base·h"); steps=["En qualsevol prisma, el volum és àrea de la base per altura."]; }
+    else if(type === "pyramid"){ pos(a,"L'àrea de la base"); pos(b,"L'altura"); title="Piràmide"; summary=`Volum = <strong>${fmt(a*b/3)}</strong>`; addFormula("V=(A_base·h)/3"); steps=["Una piràmide ocupa un terç del prisma de la mateixa base i altura."]; }
+    else if(type === "cylinder"){ pos(a,"El radi"); pos(b,"L'altura"); title="Cilindre"; summary=`Volum = <strong>${fmt(Math.PI*a*a*b)}</strong>, superfície = <strong>${fmt(2*Math.PI*a*(a+b))}</strong>`; addFormula("V=πr²h; S=2πr(r+h)"); steps=["El volum és àrea de la base per altura.","La superfície total és la suma de les dues bases i la superfície lateral."]; }
+    else if(type === "cone"){ pos(a,"El radi"); pos(b,"L'altura"); const g = Math.hypot(a,b); title="Con"; summary=`Volum = <strong>${fmt(Math.PI*a*a*b/3)}</strong>, generatriu = <strong>${fmt(g)}</strong>`; addFormula("V=(πr²h)/3; g=√(r²+h²)"); steps=["El con ocupa un terç del cilindre equivalent.","La generatriu es pot obtenir amb Pitàgores."]; }
+    else if(type === "sphere"){ pos(a,"El radi"); title="Esfera"; summary=`Volum = <strong>${fmt(4*Math.PI*a**3/3)}</strong>, superfície = <strong>${fmt(4*Math.PI*a*a)}</strong>`; addFormula("V=(4/3)πr³; S=4πr²"); steps=["El volum depèn del cub del radi.","La superfície depèn del quadrat del radi."]; }
+    else if(type === "frustum-cone"){ pos(a,"El radi major"); pos(b,"El radi menor"); pos(c,"L'altura"); title="Tronc de con"; summary=`Volum = <strong>${fmt(Math.PI*c*(a*a+a*b+b*b)/3)}</strong>`; addFormula("V=(πh/3)(R²+Rr+r²)"); steps=["Fem servir la fórmula del tronc de con quan coneixem els dos radis i l'altura."]; }
+    else if(type === "pythagoras-h"){ pos(a,"El catet a"); pos(b,"El catet b"); title="Pitàgores"; summary=`Hipotenusa = <strong>${fmt(Math.hypot(a,b))}</strong>`; addFormula("c=√(a²+b²)"); steps=["Sumem els quadrats dels catets i fem l'arrel quadrada."]; }
+    else if(type === "pythagoras-leg"){ pos(a,"La hipotenusa"); pos(b,"El catet conegut"); if(a<=b) throw new Error("La hipotenusa ha de ser més gran que el catet conegut."); title="Pitàgores"; summary=`Catet = <strong>${fmt(Math.sqrt(a*a-b*b))}</strong>`; addFormula("catet=√(c²-b²)"); steps=["Aïllem el catet desconegut a partir de c²=a²+b²."]; }
+    else throw new Error("Figura no reconeguda.");
+
+    safeRender({ title, summary, extra, steps });
+  }
+
+  const formulaCatalogV24 = {
+    algebra: {
+      label: "Àlgebra",
+      image: "./formula-images/algebra.png",
+      items: [
+        {name:"Producte notable: quadrat d'una suma", formula:"(a+b)² = a² + 2ab + b²", explanation:"Desenvolupa el quadrat d'un binomi.", parts:["a i b són els termes del binomi.","El terme central és el doble producte 2ab."]},
+        {name:"Producte notable: quadrat d'una diferència", formula:"(a-b)² = a² - 2ab + b²", explanation:"Semblant al cas anterior, però amb signe negatiu al terme central.", parts:["El primer i l'últim terme són positius.","El terme central canvia de signe."]},
+        {name:"Suma per diferència", formula:"(a+b)(a-b) = a² - b²", explanation:"Ajuda a factoritzar diferències de quadrats.", parts:["Es cancel·len els termes creuats.","Queda una diferència de quadrats."]},
+        {name:"Potència d'una potència", formula:"(a^m)^n = a^(m·n)", explanation:"Multipliquem els exponents.", parts:["La base es manté.","Els exponents es multipliquen."]},
+        {name:"Producte de potències", formula:"a^m · a^n = a^(m+n)", explanation:"Quan la base és la mateixa, sumem exponents.", parts:["Mateixa base.","Sumem exponents."]},
+        {name:"Quocient de potències", formula:"a^m / a^n = a^(m-n)", explanation:"Quan la base és la mateixa, restem exponents.", parts:["Mateixa base.","Restem exponents."]},
+        {name:"Logaritme del producte", formula:"log_a(xy) = log_a x + log_a y", explanation:"Transforma productes en sumes.", parts:["La base del logaritme es manté.","El producte es converteix en suma."]},
+        {name:"Logaritme del quocient", formula:"log_a(x/y) = log_a x - log_a y", explanation:"Transforma quocients en restes.", parts:["La base es manté.","El quocient es converteix en resta."]},
+        {name:"Canvi de base", formula:"log_a x = (log x)/(log a)", explanation:"Permet calcular qualsevol logaritme amb una calculadora científica.", parts:["Podem fer servir log decimal o log natural.","La relació és exacta."]}
+      ]
+    },
+    trigonometry: {
+      label: "Trigonometria",
+      image: "./formula-images/trigonometry.png",
+      items: [
+        {name:"Relacions bàsiques", formula:"sin α = oposat/hipotenusa; cos α = adjacent/hipotenusa; tan α = oposat/adjacent", explanation:"Definicions en triangle rectangle.", parts:["Oposat: costat davant l'angle.","Adjacent: costat al costat de l'angle.","Hipotenusa: costat més llarg."]},
+        {name:"Identitat fonamental", formula:"sin² α + cos² α = 1", explanation:"Relaciona les dues funcions bàsiques.", parts:["Serveix per obtenir una funció a partir de l'altra.","És vàlida per a qualsevol angle."]},
+        {name:"Co-ratios", formula:"sin(90°-α)=cos α; cos(90°-α)=sin α; tan(90°-α)=cot α", explanation:"Relacions d'angles complementaris.", parts:["S'apliquen a angles que sumen 90°.","Intercanvien sin i cos."]},
+        {name:"Suma d'angles", formula:"sin(α+β)=sin α cos β + cos α sin β", explanation:"Formula clau per combinar angles.", parts:["Apareixen productes de sinus i cosinus.","Serveix per deduir dobles angles."]},
+        {name:"Resta d'angles", formula:"cos(α-β)=cos α cos β + sin α sin β", explanation:"Permet operar angles amb el cosinus.", parts:["Atenció al signe positiu al cas de la resta.","És útil en demostracions."]},
+        {name:"Angle doble", formula:"sin 2α = 2 sin α cos α; cos 2α = cos² α - sin² α", explanation:"Relaciona l'angle doble amb l'angle simple.", parts:["La fórmula de cos 2α té formes equivalents.","Es poden obtenir a partir de suma d'angles."]},
+        {name:"Mig angle", formula:"sin²(α/2)=(1-cos α)/2; cos²(α/2)=(1+cos α)/2", explanation:"Molt útil en simplificacions.", parts:["Sovint cal decidir el signe segons el quadrant.","La fórmula dona el quadrat de la funció."]},
+        {name:"Producte a suma", formula:"sin α sin β = 1/2[cos(α-β)-cos(α+β)]", explanation:"Transforma productes trigonomètrics en sumes o restes.", parts:["Ajuda en integració i simplificació.","Hi ha fórmules semblants per cos·cos i sin·cos."]},
+        {name:"Valors notables", formula:"0°: sin 0=0, cos 0=1; 30°: sin=1/2, cos=√3/2; 45°: sin=cos=√2/2; 60°: sin=√3/2, cos=1/2; 90°: sin 90=1, cos 90=0", explanation:"Taula trigonomètrica essencial d'ESO i Batxillerat.", parts:["Són els angles especials més utilitzats.","També es poden expressar en radians."]},
+        {name:"Triangle equilàter", formula:"h=(√3/2)c; A=(√3/4)c²", explanation:"Un triangle equilàter es descompon en dos triangles 30°-60°-90°.", parts:["c és el costat.","h és l'altura."]}
+      ]
+    },
+    equations: {
+      label: "Equacions i inequacions",
+      image: "./formula-images/equations.png",
+      items: [
+        {name:"Equació lineal", formula:"ax + b = 0 → x = -b/a", explanation:"Resolució bàsica de primer grau.", parts:["a no pot ser 0.","Aïllem x passant b a l'altre costat."]},
+        {name:"Equació quadràtica", formula:"ax² + bx + c = 0 → x = (-b ± √(b²-4ac))/(2a)", explanation:"Calcular primer el discriminant.", parts:["Δ=b²-4ac.","Si Δ<0, no hi ha solucions reals."]},
+        {name:"Discriminant", formula:"Δ = b² - 4ac", explanation:"Indica el nombre de solucions reals.", parts:["Δ>0: dues solucions reals.","Δ=0: una solució doble.","Δ<0: cap solució real."]},
+        {name:"Sistema 2×2 (Cramer)", formula:"x=(c₁b₂-c₂b₁)/(a₁b₂-a₂b₁); y=(a₁c₂-a₂c₁)/(a₁b₂-a₂b₁)", explanation:"Per a sistemes lineals de dues equacions.", parts:["El denominador és el determinant del sistema.","Si el determinant és 0, cal estudiar el sistema."]},
+        {name:"Equació biquadràtica", formula:"ax⁴ + bx² + c = 0", explanation:"Canvi de variable u=x² per transformar-la en una quadràtica.", parts:["Primer resol u.","Després fem x = ±√u quan tingui sentit."]},
+        {name:"Equació exponencial", formula:"a^(f(x)) = a^(g(x)) → f(x)=g(x)", explanation:"Quan les bases són iguals i positives diferents d'1.", parts:["Comparem els exponents.","Si no tenen la mateixa base, busquem un canvi adequat."]},
+        {name:"Equació logarítmica", formula:"log_a(f(x)) = b → f(x)=a^b", explanation:"Sense oblidar la condició f(x)>0.", parts:["L'argument del logaritme ha de ser positiu.","Cal comprovar la solució al final."]},
+        {name:"Inequació lineal", formula:"ax+b > 0", explanation:"Es resol com una equació, però si multipliquem o dividim per un nombre negatiu, el signe canvia.", parts:["Aïllem x.","Canviem el signe si cal."]},
+        {name:"Inequació quadràtica", formula:"ax²+bx+c > 0", explanation:"Analitzem les arrels i el signe de la paràbola.", parts:["Cal trobar les arrels.","Dividim la recta real en intervals de signe."]}
+      ]
+    },
+    "analytic-geometry": {
+      label: "Geometria analítica",
+      image: "./formula-images/analytic-geometry.png",
+      items: [
+        {name:"Distància entre dos punts", formula:"d = √((x₂-x₁)² + (y₂-y₁)²)", explanation:"Aplicació directa de Pitàgores al pla.", parts:["Restem coordenades homòlogues.","Elevem al quadrat, sumem i fem l'arrel."]},
+        {name:"Punt mig", formula:"M=((x₁+x₂)/2, (y₁+y₂)/2)", explanation:"Coordenades mitjanes dels extrems del segment.", parts:["Fem la mitjana de les abscisses.","Fem la mitjana de les ordenades."]},
+        {name:"Pendent", formula:"m=(y₂-y₁)/(x₂-x₁)", explanation:"Mesura la inclinació d'una recta.", parts:["Si x₂=x₁, la recta és vertical.","La pendent no està definida en rectes verticals."]},
+        {name:"Recta explícita", formula:"y = mx + n", explanation:"Forma habitual per dibuixar rectes.", parts:["m és la pendent.","n és l'ordenada a l'origen."]},
+        {name:"Recta punt-pendent", formula:"y - y₁ = m(x - x₁)", explanation:"Molt útil quan coneixem un punt i la pendent.", parts:["Substituïm el punt conegut.","Després podem passar a forma explícita o general."]},
+        {name:"Recta general", formula:"Ax + By + C = 0", explanation:"Forma algebraica general de la recta.", parts:["És útil per estudiar paral·lelisme i perpendicularitat.","La pendent és -A/B si B≠0."]},
+        {name:"Recta paramètrica", formula:"x = x₀ + at; y = y₀ + bt", explanation:"Descriu la recta amb un punt i un vector director.", parts:["(x₀,y₀) és un punt.","(a,b) és el vector director."]},
+        {name:"Recta contínua", formula:"(x-x₀)/a = (y-y₀)/b", explanation:"Equivalent a la forma paramètrica si a i b són no nuls.", parts:["Cal un punt i un vector director.","És útil en exercicis de geometria analítica."]},
+        {name:"Circumferència", formula:"(x-a)² + (y-b)² = r²", explanation:"Centre (a,b) i radi r.", parts:["a i b són les coordenades del centre.","r és el radi."]},
+        {name:"Paràbola de vèrtex (h,k)", formula:"y = a(x-h)² + k", explanation:"Permet llegir directament el vèrtex.", parts:["(h,k) és el vèrtex.","a determina obertura i concavitat."]}
+      ]
+    },
+    "plane-geometry": {
+      label: "Geometria plana",
+      image: "./formula-images/plane-geometry.png",
+      items: [
+        {name:"Quadrat", formula:"A=c²; P=4c", explanation:"Figura de quatre costats iguals.", parts:["c és el costat.","Àrea i perímetre depenen d'una sola mesura."]},
+        {name:"Rectangle", formula:"A=b·h; P=2(b+h)", explanation:"Figura de costats oposats iguals.", parts:["b és la base.","h és l'altura."]},
+        {name:"Triangle", formula:"A=(b·h)/2", explanation:"Qualsevol triangle es calcula amb base i altura.", parts:["b és la base.","h és l'altura perpendicular."]},
+        {name:"Triangle equilàter", formula:"A=(√3/4)c²; h=(√3/2)c", explanation:"Té tots els costats iguals.", parts:["c és el costat.","h és l'altura."]},
+        {name:"Paral·lelogram", formula:"A=b·h", explanation:"Àrea igual que un rectangle equivalent.", parts:["b és la base.","h és l'altura."]},
+        {name:"Rombe / deltoide", formula:"A=(D·d)/2", explanation:"Es fa servir el producte de diagonals.", parts:["D és la diagonal major.","d és la diagonal menor."]},
+        {name:"Trapezi", formula:"A=((B+b)·h)/2", explanation:"Mitjana de bases per altura.", parts:["B és la base major.","b és la base menor.","h és l'altura."]},
+        {name:"Cercle", formula:"A=πr²; L=2πr", explanation:"Àrea i longitud de la circumferència.", parts:["r és el radi.","L és la longitud."]},
+        {name:"Sector circular", formula:"A=(θ/360)·πr²", explanation:"Prenem la part proporcional al cercle complet.", parts:["θ és l'angle central en graus.","r és el radi."]},
+        {name:"Corona circular", formula:"A=π(R²-r²)", explanation:"Àrea del cercle gran menys l'àrea del petit.", parts:["R és el radi exterior.","r és el radi interior."]},
+        {name:"El·lipse", formula:"A=πab", explanation:"a i b són els semieixos.", parts:["a: semieix major.","b: semieix menor."]},
+        {name:"Polígon regular", formula:"P=n·c; A=(P·apotema)/2", explanation:"Generalitza molts polígons regulars.", parts:["n és el nombre de costats.","c és el costat.","apotema és la distància del centre al costat."]}
+      ]
+    },
+    "solid-geometry": {
+      label: "Cossos geomètrics",
+      image: "./formula-images/solid-geometry.png",
+      items: [
+        {name:"Cub", formula:"V=c³; S=6c²", explanation:"Totes les arestes són iguals.", parts:["c és el costat.","S és la superfície total."]},
+        {name:"Prisma rectangular", formula:"V=l·a·h; S=2(la+lh+ah)", explanation:"Ortoedre o prisma rectangular.", parts:["l: llargada.","a: amplada.","h: altura."]},
+        {name:"Prisma", formula:"V=A_base·h", explanation:"Vàlid per a qualsevol prisma.", parts:["A_base és l'àrea de la base.","h és l'altura."]},
+        {name:"Piràmide", formula:"V=(A_base·h)/3", explanation:"Té volum igual a un terç del prisma equivalent.", parts:["A_base és l'àrea de la base.","h és l'altura."]},
+        {name:"Cilindre", formula:"V=πr²h; S=2πr(r+h)", explanation:"Dues bases circulars i una superfície lateral.", parts:["r és el radi.","h és l'altura."]},
+        {name:"Con", formula:"V=(πr²h)/3", explanation:"Equivalent a un terç d'un cilindre de la mateixa base i altura.", parts:["r és el radi.","h és l'altura."]},
+        {name:"Esfera", formula:"V=(4/3)πr³; S=4πr²", explanation:"Cos rodó de radi r.", parts:["r és el radi.","S és la superfície."]},
+        {name:"Tronc de con", formula:"V=(πh/3)(R²+Rr+r²)", explanation:"Cos entre dues bases circulars paral·leles.", parts:["R és el radi major.","r és el radi menor.","h és l'altura."]}
+      ]
+    },
+    physics: {
+      label: "Física",
+      image: "./formula-images/physics.png",
+      items: [
+        {name:"MRU", formula:"v=Δx/Δt", explanation:"Velocitat constant." , parts:["Δx: desplaçament","Δt: temps"]},
+        {name:"MRUA", formula:"v=v₀+at; x=x₀+v₀t+½at²", explanation:"Moviment amb acceleració constant.", parts:["v₀: velocitat inicial","a: acceleració","t: temps"]},
+        {name:"Newton", formula:"F=ma", explanation:"Relació entre força, massa i acceleració.", parts:["F: força","m: massa","a: acceleració"]},
+        {name:"Treball", formula:"W=F·d·cos θ", explanation:"Energia transferida per una força.", parts:["F: força","d: desplaçament","θ: angle"]},
+        {name:"Ohm", formula:"V=IR", explanation:"Llei bàsica d'electricitat.", parts:["V: tensió","I: intensitat","R: resistència"]},
+        {name:"Gas ideal", formula:"PV=nRT", explanation:"Model ideal per gasos.", parts:["P: pressió","V: volum","n: mols","T: temperatura absoluta"]}
+      ]
+    },
+    chemistry: {
+      label: "Química",
+      image: "./formula-images/chemistry.png",
+      items: [
+        {name:"Mols", formula:"n = m/M", explanation:"Relació entre massa i massa molar.", parts:["n: mols","m: massa","M: massa molar"]},
+        {name:"Nombre de partícules", formula:"N = n·N_A", explanation:"Passa de mols a partícules.", parts:["N_A: nombre d'Avogadro","n: mols"]},
+        {name:"Molaritat", formula:"C=n/V", explanation:"Concentració molar.", parts:["C: molaritat","n: mols","V: volum en litres"]},
+        {name:"Dilució", formula:"C₁V₁=C₂V₂", explanation:"Conservació de la quantitat de solut.", parts:["1: estat inicial","2: estat final"]},
+        {name:"pH", formula:"pH = -log[H⁺]", explanation:"Mesura l'acidesa.", parts:["[H⁺]: concentració d'ions hidrogen"]},
+        {name:"Gasos", formula:"PV=nRT", explanation:"Equació d'estat del gas ideal.", parts:["P: pressió","V: volum","n: mols","T: temperatura absoluta"]}
+      ]
+    }
+  };
+
+  function ensureFormulaCategoriesV24(){
+    const select = $("formula-category");
+    if(!select) return;
+    select.innerHTML = `
+      <option value="algebra">Àlgebra</option>
+      <option value="trigonometry">Trigonometria</option>
+      <option value="equations">Equacions i inequacions</option>
+      <option value="analytic-geometry">Geometria analítica</option>
+      <option value="plane-geometry">Geometria plana</option>
+      <option value="solid-geometry">Cossos geomètrics</option>
+      <option value="physics">Física</option>
+      <option value="chemistry">Química</option>
+    `;
+  }
+  function updateFormulaSelectV24(){
+    const cat = $("formula-category") ? $("formula-category").value : "algebra";
+    const box = $("formula-select");
+    if(!box || !formulaCatalogV24[cat]) return;
+    box.innerHTML = formulaCatalogV24[cat].items.map((item, i) => `<option value="${i}">${item.name}</option>`).join("");
+  }
+  function renderFormulaV24(){
+    const catKey = $("formula-category").value;
+    const idx = Number($("formula-select").value || 0);
+    const cat = formulaCatalogV24[catKey];
+    if(!cat) throw new Error("Bloc de fórmules no disponible.");
+    const item = cat.items[idx];
+    const extra = `
+      <img class="formula-illustration" src="${cat.image}" alt="Esquema de ${cat.label}" />
+      <div class="formula-parts">
+        <strong>Components clau</strong>
+        <ul>${item.parts.map(part => `<li>${part}</li>`).join("")}</ul>
+      </div>
+    `;
+    safeRender({
+      title: `${cat.label}: ${item.name}`,
+      summary: `<span class="math">${item.formula}</span>`,
+      extra,
+      steps: [
+        item.explanation,
+        "Llegeix primer el significat de cada símbol, identifica les dades de l'exercici i comprova que totes les unitats siguin coherents."
+      ]
+    });
+  }
+
+  // Geometry DOM hookup
+  ensureGeometryOptionsV24();
+  if($("geometry-type")){
+    $("geometry-type").addEventListener("change", updateGeometryInputsV24, true);
+    $("geometry-type").onchange = updateGeometryInputsV24;
+  }
+  updateGeometryInputsV24();
+
+  if($("geometry-form")){
+    $("geometry-form").addEventListener("submit", function(event){
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      try{
+        renderGeometryV24($("geometry-type").value);
+      }catch(err){
+        safeError("No s'ha pogut calcular la geometria.", err.message);
+      }
+    }, true);
+  }
+
+  // Formula DOM hookup
+  ensureFormulaCategoriesV24();
+  if($("formula-category")){
+    $("formula-category").addEventListener("change", updateFormulaSelectV24, true);
+    $("formula-category").onchange = updateFormulaSelectV24;
+  }
+  updateFormulaSelectV24();
+
+  if($("formulas-form")){
+    $("formulas-form").addEventListener("submit", function(event){
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      try{
+        renderFormulaV24();
+      }catch(err){
+        safeError("No s'ha pogut mostrar la fórmula.", err.message);
+      }
+    }, true);
+  }
+})();
+
+
+/* V25: compendi matemàtic ampliat */
+(function(){
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const safeRender = payload => typeof render === "function" ? render(payload) : console.log(payload);
+  const safeError = (title,msg) => typeof renderError === "function" ? renderError(title,msg) : console.error(title,msg);
+
+  const formulaCatalogV25 = {
+    algebra: {
+      label: "Àlgebra",
+      image: "./formula-images/algebra.png",
+      items: [
+        {name:"Propietat distributiva", formula:"a(b+c)=ab+ac", explanation:"Permet desenvolupar o factoritzar expressions.", parts:["a és el factor comú.","b+c és la suma dins del parèntesi."]},
+        {name:"Factor comú", formula:"ab+ac=a(b+c)", explanation:"Procés invers de la distributiva.", parts:["Busquem el factor que es repeteix.","El traiem fora del parèntesi."]},
+        {name:"Quadrat d'una suma", formula:"(a+b)²=a²+2ab+b²", explanation:"Producte notable fonamental.", parts:["a²: quadrat del primer terme.","2ab: doble producte.","b²: quadrat del segon terme."]},
+        {name:"Quadrat d'una diferència", formula:"(a-b)²=a²-2ab+b²", explanation:"Igual que el quadrat de suma però amb signe negatiu al terme central.", parts:["El signe només afecta el terme 2ab.","Els quadrats són positius."]},
+        {name:"Suma per diferència", formula:"(a+b)(a-b)=a²-b²", explanation:"Diferència de quadrats.", parts:["S'utilitza per factoritzar.","Els termes creuats es cancel·len."]},
+        {name:"Cub d'una suma", formula:"(a+b)³=a³+3a²b+3ab²+b³", explanation:"Desenvolupament de tercer grau.", parts:["Coeficients 1,3,3,1.","Segueix el triangle de Pascal."]},
+        {name:"Cub d'una diferència", formula:"(a-b)³=a³-3a²b+3ab²-b³", explanation:"Alterna signes.", parts:["Coeficients 1,3,3,1.","Canvien els signes segons la potència de b."]},
+        {name:"Potències: producte", formula:"a^m·a^n=a^(m+n)", explanation:"Mateixa base: sumem exponents.", parts:["La base no canvia.","Els exponents se sumen."]},
+        {name:"Potències: quocient", formula:"a^m/a^n=a^(m-n)", explanation:"Mateixa base: restem exponents.", parts:["a no pot ser 0.","Restem exponent del denominador."]},
+        {name:"Potència d'una potència", formula:"(a^m)^n=a^(mn)", explanation:"Multipliquem exponents.", parts:["S'aplica quan hi ha una potència elevada a una altra."]},
+        {name:"Exponent negatiu", formula:"a^(-n)=1/a^n", explanation:"Un exponent negatiu indica invers.", parts:["a no pot ser 0.","Canvia de numerador a denominador."]},
+        {name:"Arrels i potències", formula:"√[n](a)=a^(1/n)", explanation:"Relació entre radicals i exponents fraccionaris.", parts:["n és l'índex de l'arrel.","a és el radicand."]},
+        {name:"Logaritme del producte", formula:"log_a(xy)=log_a x + log_a y", explanation:"Converteix productes en sumes.", parts:["x i y han de ser positius.","La base a és positiva i diferent d'1."]},
+        {name:"Logaritme del quocient", formula:"log_a(x/y)=log_a x - log_a y", explanation:"Converteix quocients en restes.", parts:["x i y han de ser positius."]},
+        {name:"Logaritme d'una potència", formula:"log_a(x^n)=n·log_a x", explanation:"L'exponent passa multiplicant.", parts:["x ha de ser positiu.","n pot ser real en context adequat."]},
+        {name:"Canvi de base", formula:"log_a x = log_b x / log_b a", explanation:"Permet calcular logaritmes amb qualsevol base.", parts:["b pot ser 10 o e.","a ha de ser positiva i diferent d'1."]},
+        {name:"Valor absolut", formula:"|x|={x si x≥0; -x si x<0}", explanation:"Distància de x a 0.", parts:["Sempre dona resultat no negatiu."]}
+      ]
+    },
+    functions: {
+      label: "Funcions",
+      image: "./formula-images/functions.png",
+      items: [
+        {name:"Domini", formula:"D(f) = valors de x permesos", explanation:"Conjunt d'entrades que fan que la funció tingui sentit.", parts:["Evita denominadors 0.","Evita arrels parelles de nombres negatius en reals.","Evita logaritmes d'arguments no positius."]},
+        {name:"Recorregut", formula:"Im(f) = valors que pot prendre y", explanation:"També anomenat imatge o rang.", parts:["Depèn de la forma de la funció.","Es pot estudiar amb gràfica o anàlisi."]},
+        {name:"Funció lineal", formula:"f(x)=mx+n", explanation:"Recta de pendent m.", parts:["m: pendent.","n: ordenada a l'origen."]},
+        {name:"Funció afí: zero", formula:"mx+n=0 → x=-n/m", explanation:"Tall amb l'eix x.", parts:["m no pot ser 0."]},
+        {name:"Funció quadràtica", formula:"f(x)=ax²+bx+c", explanation:"Paràbola.", parts:["a determina concavitat.","c és el tall amb l'eix y."]},
+        {name:"Vèrtex de paràbola", formula:"x_v=-b/(2a); y_v=f(x_v)", explanation:"Màxim o mínim segons el signe d'a.", parts:["Si a>0 és mínim.","Si a<0 és màxim."]},
+        {name:"Forma de vèrtex", formula:"f(x)=a(x-h)²+k", explanation:"Permet llegir directament el vèrtex.", parts:["Vèrtex: (h,k)."]},
+        {name:"Funció racional", formula:"f(x)=P(x)/Q(x)", explanation:"Quocient de polinomis.", parts:["Q(x) no pot ser 0.","Pot tenir asímptotes."]},
+        {name:"Asímptota vertical", formula:"Q(a)=0 → x=a", explanation:"Possible asímptota en valors que anul·len el denominador.", parts:["Cal estudiar si hi ha simplificació."]},
+        {name:"Funció exponencial", formula:"f(x)=a^x", explanation:"Creixement o decreixement segons la base.", parts:["Si a>1 creix.","Si 0<a<1 decreix."]},
+        {name:"Funció logarítmica", formula:"f(x)=log_a x", explanation:"Inversa de l'exponencial.", parts:["Domini: x>0.","Base a>0 i a≠1."]},
+        {name:"Composició", formula:"(f∘g)(x)=f(g(x))", explanation:"Aplica primer g i després f.", parts:["Cal que g(x) estigui dins del domini de f."]},
+        {name:"Funció inversa", formula:"f(f⁻¹(x))=x", explanation:"Desfà l'acció de la funció.", parts:["No totes les funcions tenen inversa global.","Ha de ser injectiva en el domini considerat."]},
+        {name:"Transformació vertical", formula:"g(x)=f(x)+k", explanation:"Mou la gràfica amunt o avall.", parts:["k>0: puja.","k<0: baixa."]},
+        {name:"Transformació horitzontal", formula:"g(x)=f(x-h)", explanation:"Mou la gràfica cap a la dreta o esquerra.", parts:["h>0: dreta.","h<0: esquerra."]}
+      ]
+    },
+    trigonometry: {
+      label: "Trigonometria",
+      image: "./formula-images/trigonometry.png",
+      items: [
+        {name:"Raons trigonomètriques", formula:"sin α=op/hip; cos α=adj/hip; tan α=op/adj", explanation:"Definicions en triangle rectangle.", parts:["op: catet oposat.","adj: catet adjacent.","hip: hipotenusa."]},
+        {name:"Recíproques", formula:"csc α=1/sin α; sec α=1/cos α; cot α=1/tan α", explanation:"Funcions recíproques de sin, cos i tan.", parts:["csc: cosecant.","sec: secant.","cot: cotangent."]},
+        {name:"Identitat fonamental", formula:"sin²α+cos²α=1", explanation:"Relació bàsica del cercle unitat.", parts:["Vàlida per a tot angle."]},
+        {name:"Tangents i secants", formula:"1+tan²α=sec²α", explanation:"Deriva de dividir sin²+cos²=1 per cos².", parts:["cos α no pot ser 0."]},
+        {name:"Cotangent i cosecant", formula:"1+cot²α=csc²α", explanation:"Deriva de dividir per sin².", parts:["sin α no pot ser 0."]},
+        {name:"Co-ratios", formula:"sin(90°-α)=cos α; cos(90°-α)=sin α", explanation:"Relacions d'angles complementaris.", parts:["Angles que sumen 90°.","Intercanvien sinus i cosinus."]},
+        {name:"Suma de sinus", formula:"sin(α+β)=sinαcosβ+cosαsinβ", explanation:"Fórmula d'addició.", parts:["Útil per deduir angles dobles."]},
+        {name:"Resta de sinus", formula:"sin(α-β)=sinαcosβ-cosαsinβ", explanation:"Canvia el signe del segon terme.", parts:["Atenció als signes."]},
+        {name:"Suma de cosinus", formula:"cos(α+β)=cosαcosβ-sinαsinβ", explanation:"Fórmula d'addició del cosinus.", parts:["El signe és negatiu."]},
+        {name:"Resta de cosinus", formula:"cos(α-β)=cosαcosβ+sinαsinβ", explanation:"Fórmula per diferència d'angles.", parts:["El signe és positiu."]},
+        {name:"Tangent de suma", formula:"tan(α+β)=(tanα+tanβ)/(1-tanαtanβ)", explanation:"Combina tangents.", parts:["Denominador no pot ser 0."]},
+        {name:"Angle doble sinus", formula:"sin(2α)=2sinαcosα", explanation:"Cas particular de sin(α+α).", parts:["Apareix el doble producte."]},
+        {name:"Angle doble cosinus", formula:"cos(2α)=cos²α-sin²α=2cos²α-1=1-2sin²α", explanation:"Tres formes equivalents.", parts:["Tria la forma segons les dades disponibles."]},
+        {name:"Angle doble tangent", formula:"tan(2α)=2tanα/(1-tan²α)", explanation:"Cas particular de tangent de suma.", parts:["El denominador no pot ser 0."]},
+        {name:"Mig angle sinus", formula:"sin²(α/2)=(1-cosα)/2", explanation:"Permet obtenir sinus del mig angle.", parts:["Cal decidir el signe segons el quadrant."]},
+        {name:"Mig angle cosinus", formula:"cos²(α/2)=(1+cosα)/2", explanation:"Permet obtenir cosinus del mig angle.", parts:["Cal decidir el signe segons el quadrant."]},
+        {name:"Producte a suma 1", formula:"sinαsinβ=1/2[cos(α-β)-cos(α+β)]", explanation:"Transforma productes en sumes.", parts:["Útil en simplificacions i integrals."]},
+        {name:"Producte a suma 2", formula:"cosαcosβ=1/2[cos(α-β)+cos(α+β)]", explanation:"Producte de cosinus.", parts:["Suma de dos cosinus."]},
+        {name:"Producte a suma 3", formula:"sinαcosβ=1/2[sin(α+β)+sin(α-β)]", explanation:"Producte sinus-cosinus.", parts:["Suma de sinus."]},
+        {name:"Taula trigonomètrica notable", formula:"0°,30°,45°,60°,90°", explanation:"Valors essencials de sinus, cosinus i tangent.", parts:["sin 30°=1/2.","cos 60°=1/2.","tan 45°=1."]},
+        {name:"Radians i graus", formula:"180°=π rad", explanation:"Conversió bàsica d'angles.", parts:["graus→rad: multiplica per π/180.","rad→graus: multiplica per 180/π."]},
+        {name:"Triangle equilàter", formula:"h=(√3/2)c; A=(√3/4)c²", explanation:"Relació geomètrica i trigonomètrica.", parts:["c és el costat.","h és l'altura."]}
+      ]
+    },
+    equations: {
+      label: "Equacions i inequacions",
+      image: "./formula-images/equations.png",
+      items: [
+        {name:"Lineal", formula:"ax+b=0 → x=-b/a", explanation:"Equació de primer grau.", parts:["a no pot ser 0."]},
+        {name:"Quadràtica", formula:"ax²+bx+c=0 → x=(-b±√Δ)/(2a)", explanation:"Formula general.", parts:["Δ=b²-4ac.","a no pot ser 0."]},
+        {name:"Discriminant", formula:"Δ=b²-4ac", explanation:"Decideix el nombre de solucions reals.", parts:["Δ>0: dues.","Δ=0: una doble.","Δ<0: cap real."]},
+        {name:"Equació incompleta 1", formula:"ax²+c=0 → x=±√(-c/a)", explanation:"Quan falta el terme bx.", parts:["Cal que -c/a sigui no negatiu en reals."]},
+        {name:"Equació incompleta 2", formula:"ax²+bx=0 → x(ax+b)=0", explanation:"Factoritzem x.", parts:["Solucions: x=0 i x=-b/a."]},
+        {name:"Biquadràtica", formula:"ax⁴+bx²+c=0; u=x²", explanation:"Canvi de variable.", parts:["Resol primer en u.","Després x=±√u."]},
+        {name:"Racional", formula:"P(x)/Q(x)=0 → P(x)=0, Q(x)≠0", explanation:"Una fracció és 0 quan el numerador és 0.", parts:["No oblidis excloure els zeros del denominador."]},
+        {name:"Exponencial mateixa base", formula:"a^f(x)=a^g(x) → f(x)=g(x)", explanation:"Si la base és positiva i diferent d'1.", parts:["Compara exponents."]},
+        {name:"Logarítmica", formula:"log_a(f(x))=b → f(x)=a^b", explanation:"Passa de logaritme a exponencial.", parts:["Condició: f(x)>0."]},
+        {name:"Sistema 2×2", formula:"a₁x+b₁y=c₁; a₂x+b₂y=c₂", explanation:"Es pot resoldre per substitució, reducció o Cramer.", parts:["Mira si el determinant és 0."]},
+        {name:"Cramer 2×2", formula:"x=(c₁b₂-c₂b₁)/(a₁b₂-a₂b₁)", explanation:"Formula per x en sistemes 2×2.", parts:["Denominador: determinant principal."]},
+        {name:"Inequació lineal", formula:"ax+b>0", explanation:"Aïlla x.", parts:["Si divideixes per un nombre negatiu, canvia el signe."]},
+        {name:"Inequació quadràtica", formula:"ax²+bx+c>0", explanation:"Estudia signes per intervals.", parts:["Troba arrels.","Analitza el signe de la paràbola."]},
+        {name:"Inequació racional", formula:"P(x)/Q(x)>0", explanation:"Taula de signes amb zeros de P i Q.", parts:["Els zeros del denominador no s'inclouen."]},
+        {name:"Valor absolut", formula:"|x-a|<r → a-r<x<a+r", explanation:"Distància menor que r.", parts:["r ha de ser positiu."]},
+        {name:"Valor absolut gran", formula:"|x-a|>r → x<a-r o x>a+r", explanation:"Distància més gran que r.", parts:["Dona dos intervals."]}
+      ]
+    },
+    "analytic-geometry": {
+      label: "Geometria analítica",
+      image: "./formula-images/analytic-geometry.png",
+      items: [
+        {name:"Distància entre punts", formula:"d=√((x₂-x₁)²+(y₂-y₁)²)", explanation:"Pitàgores al pla.", parts:["x₂-x₁: diferència horitzontal.","y₂-y₁: diferència vertical."]},
+        {name:"Punt mig", formula:"M=((x₁+x₂)/2,(y₁+y₂)/2)", explanation:"Mitjana de coordenades.", parts:["Punt central del segment."]},
+        {name:"Pendent", formula:"m=(y₂-y₁)/(x₂-x₁)", explanation:"Inclinació de la recta.", parts:["Si x₂=x₁ és vertical."]},
+        {name:"Recta explícita", formula:"y=mx+n", explanation:"Forma amb pendent i ordenada.", parts:["m: pendent.","n: tall amb y."]},
+        {name:"Recta punt-pendent", formula:"y-y₁=m(x-x₁)", explanation:"Amb un punt i la pendent.", parts:["Substitueix el punt conegut."]},
+        {name:"Recta general", formula:"Ax+By+C=0", explanation:"Forma algebraica general.", parts:["Vector normal: (A,B).","Vector director: (-B,A)."]},
+        {name:"Recta vectorial", formula:"(x,y)=P+t·v", explanation:"Punt més múltiple d'un vector.", parts:["P és un punt.","v és vector director."]},
+        {name:"Recta paramètrica", formula:"x=x₀+at; y=y₀+bt", explanation:"Separació de coordenades.", parts:["t és el paràmetre."]},
+        {name:"Recta contínua", formula:"(x-x₀)/a=(y-y₀)/b", explanation:"Si a i b no són 0.", parts:["Equivalent a la paramètrica."]},
+        {name:"Distància punt-recta", formula:"d=|Ax₀+By₀+C|/√(A²+B²)", explanation:"Recta en forma general.", parts:["Punt: (x₀,y₀).","Recta: Ax+By+C=0."]},
+        {name:"Paral·lelisme", formula:"m₁=m₂", explanation:"Rectes amb la mateixa pendent.", parts:["En forma general: A₁B₂-A₂B₁=0."]},
+        {name:"Perpendicularitat", formula:"m₁·m₂=-1", explanation:"Pendents inverses i oposades.", parts:["En vectors: producte escalar 0."]},
+        {name:"Circumferència", formula:"(x-a)²+(y-b)²=r²", explanation:"Centre i radi.", parts:["Centre: (a,b).","Radi: r."]},
+        {name:"Paràbola vertical", formula:"y=a(x-h)²+k", explanation:"Forma de vèrtex.", parts:["Vèrtex: (h,k).","Eix de simetria: x=h."]},
+        {name:"El·lipse centrada", formula:"x²/a² + y²/b² = 1", explanation:"Cònica tancada.", parts:["a i b són semieixos."]},
+        {name:"Hipèrbola centrada", formula:"x²/a² - y²/b² = 1", explanation:"Cònica oberta.", parts:["Té dues branques."]}
+      ]
+    },
+    calculus: {
+      label: "Límits, derivades i integrals",
+      image: "./formula-images/calculus.png",
+      items: [
+        {name:"Límit intuïtiu", formula:"lim[x→a] f(x)=L", explanation:"f(x) s'apropa a L quan x s'apropa a a.", parts:["No cal que f(a) existeixi.","Importa el comportament al voltant de a."]},
+        {name:"Límit de suma", formula:"lim(f+g)=lim f + lim g", explanation:"Regla algebraica de límits.", parts:["Sempre que els límits existeixin."]},
+        {name:"Indeterminació 0/0", formula:"factoritza, simplifica o racionalitza", explanation:"Estratègies habituals.", parts:["No és resultat final.","Cal transformar l'expressió."]},
+        {name:"Derivada definició", formula:"f'(x)=lim[h→0](f(x+h)-f(x))/h", explanation:"Pendent instantània.", parts:["h és un increment petit.","El límit dona la pendent."]},
+        {name:"Potència", formula:"d(xⁿ)/dx = n x^(n-1)", explanation:"Regla bàsica de derivació.", parts:["n baixa multiplicant.","L'exponent disminueix en 1."]},
+        {name:"Constant per funció", formula:"(k f)' = k f'", explanation:"La constant surt fora.", parts:["k no depèn de x."]},
+        {name:"Suma", formula:"(f+g)'=f'+g'", explanation:"Derivem terme a terme.", parts:["També val per restes."]},
+        {name:"Producte", formula:"(fg)'=f'g+fg'", explanation:"No és només producte de derivades.", parts:["Deriva el primer i deixa el segon.","Després deixa el primer i deriva el segon."]},
+        {name:"Quocient", formula:"(f/g)'=(f'g-fg')/g²", explanation:"Per quocients de funcions.", parts:["g no pot ser 0."]},
+        {name:"Cadena", formula:"(f(g(x)))'=f'(g(x))·g'(x)", explanation:"Deriva funcions compostes.", parts:["Derivada exterior per derivada interior."]},
+        {name:"Derivades trigonomètriques", formula:"(sin x)'=cos x; (cos x)'=-sin x; (tan x)'=sec²x", explanation:"Bàsiques en radians.", parts:["Assumeix x en radians."]},
+        {name:"Derivades exponencials", formula:"(e^x)'=e^x; (a^x)'=a^x ln a", explanation:"Exponencials.", parts:["a>0 i a≠1."]},
+        {name:"Derivades logarítmiques", formula:"(ln x)'=1/x; (log_a x)'=1/(x ln a)", explanation:"Domini x>0.", parts:["Base a positiva i diferent d'1."]},
+        {name:"Integral de potència", formula:"∫xⁿ dx = x^(n+1)/(n+1)+C", explanation:"Per n≠-1.", parts:["Suma 1 a l'exponent.","Divideix pel nou exponent."]},
+        {name:"Integral 1/x", formula:"∫1/x dx = ln|x|+C", explanation:"Cas especial.", parts:["x no pot ser 0."]},
+        {name:"Integrals trigonomètriques", formula:"∫sin x dx=-cos x+C; ∫cos x dx=sin x+C", explanation:"Antiderivades bàsiques.", parts:["Assumeix radians."]},
+        {name:"Integral exponencial", formula:"∫e^x dx=e^x+C", explanation:"L'exponencial e^x es manté.", parts:["La derivada també és e^x."]},
+        {name:"Integral definida", formula:"∫[a,b] f(x)dx = F(b)-F(a)", explanation:"Teorema fonamental del càlcul.", parts:["F és una primitiva de f.","Dona àrea signada."]}
+      ]
+    },
+    sequences: {
+      label: "Successions i progressions",
+      image: "./formula-images/sequences.png",
+      items: [
+        {name:"Successió", formula:"aₙ", explanation:"Llista ordenada de nombres.", parts:["n indica la posició.","aₙ és el terme general."]},
+        {name:"Aritmètica terme general", formula:"aₙ=a₁+(n-1)d", explanation:"La diferència entre termes és constant.", parts:["a₁: primer terme.","d: diferència."]},
+        {name:"Aritmètica suma", formula:"Sₙ=n(a₁+aₙ)/2", explanation:"Suma dels n primers termes.", parts:["n: nombre de termes.","aₙ: últim terme."]},
+        {name:"Geomètrica terme general", formula:"aₙ=a₁·r^(n-1)", explanation:"La raó entre termes és constant.", parts:["r: raó.","a₁: primer terme."]},
+        {name:"Geomètrica suma finita", formula:"Sₙ=a₁(1-rⁿ)/(1-r)", explanation:"Per r diferent d'1.", parts:["Si r=1, la suma és n·a₁."]},
+        {name:"Geomètrica suma infinita", formula:"S∞=a₁/(1-r)", explanation:"Només si |r|<1.", parts:["La successió convergeix cap a 0."]},
+        {name:"Interès compost", formula:"C_f=C_i(1+i)^t", explanation:"Creixement percentual acumulat.", parts:["i és taxa per període.","t és nombre de períodes."]},
+        {name:"Recurrència aritmètica", formula:"aₙ=aₙ₋₁+d", explanation:"Cada terme depèn de l'anterior.", parts:["Cal conèixer el primer terme."]},
+        {name:"Recurrència geomètrica", formula:"aₙ=r·aₙ₋₁", explanation:"Multipliquem per una raó constant.", parts:["r és la raó."]}
+      ]
+    },
+    matrices: {
+      label: "Matrius i sistemes",
+      image: "./formula-images/matrices.png",
+      items: [
+        {name:"Suma de matrius", formula:"(A+B)ᵢⱼ=Aᵢⱼ+Bᵢⱼ", explanation:"Element a element.", parts:["Mateixes dimensions."]},
+        {name:"Producte per escalar", formula:"(kA)ᵢⱼ=kAᵢⱼ", explanation:"Multiplica cada element.", parts:["k és un nombre."]},
+        {name:"Producte de matrius", formula:"(AB)ᵢⱼ=Σ AᵢₖBₖⱼ", explanation:"Files per columnes.", parts:["Columnes d'A = files de B."]},
+        {name:"Identitat", formula:"AI=IA=A", explanation:"Matriu neutra del producte.", parts:["Diagonal de 1.","Resta 0."]},
+        {name:"Determinant 2×2", formula:"det[[a,b],[c,d]]=ad-bc", explanation:"Mesura si una matriu 2×2 és invertible.", parts:["Si det=0, no té inversa."]},
+        {name:"Inversa 2×2", formula:"A⁻¹=(1/(ad-bc))[[d,-b],[-c,a]]", explanation:"Per matrius 2×2 invertibles.", parts:["Cal determinant no nul."]},
+        {name:"Sistema matricial", formula:"AX=B", explanation:"Forma compacta d'un sistema lineal.", parts:["A: matriu de coeficients.","X: incògnites.","B: termes independents."]},
+        {name:"Solució amb inversa", formula:"X=A⁻¹B", explanation:"Si A és invertible.", parts:["Només si det(A)≠0."]},
+        {name:"Traça", formula:"tr(A)=a₁₁+a₂₂+...+aₙₙ", explanation:"Suma de la diagonal principal.", parts:["Només en matrius quadrades."]},
+        {name:"Transposada", formula:"(Aᵀ)ᵢⱼ=Aⱼᵢ", explanation:"Intercanvia files i columnes.", parts:["Files passen a columnes."]}
+      ]
+    },
+    "vectors-formulas": {
+      label: "Vectors",
+      image: "./formula-images/vectors-formulas.png",
+      items: [
+        {name:"Vector entre punts", formula:"AB=(x₂-x₁,y₂-y₁)", explanation:"Resta coordenades final menys inicial.", parts:["A és origen.","B és extrem."]},
+        {name:"Mòdul 2D", formula:"|v|=√(x²+y²)", explanation:"Longitud del vector.", parts:["Pitàgores en el pla."]},
+        {name:"Mòdul 3D", formula:"|v|=√(x²+y²+z²)", explanation:"Longitud a l'espai.", parts:["Extensió de Pitàgores."]},
+        {name:"Suma de vectors", formula:"(a,b)+(c,d)=(a+c,b+d)", explanation:"Component a component.", parts:["Sumem coordenades homòlogues."]},
+        {name:"Producte escalar", formula:"v·w=x₁x₂+y₁y₂+z₁z₂", explanation:"Dona un nombre.", parts:["Serveix per angles i perpendicularitat."]},
+        {name:"Angle entre vectors", formula:"cosθ=(v·w)/(|v||w|)", explanation:"Calcula l'angle.", parts:["Cap vector pot ser nul."]},
+        {name:"Perpendicularitat", formula:"v·w=0", explanation:"Vectors ortogonals.", parts:["Producte escalar zero."]},
+        {name:"Producte vectorial", formula:"v×w", explanation:"Vector perpendicular als dos vectors.", parts:["Només en 3D."]},
+        {name:"Recta vectorial", formula:"r: P+t·v", explanation:"Punt més vector director.", parts:["P és un punt.","v és vector director."]},
+        {name:"Pla", formula:"A(x-x₀)+B(y-y₀)+C(z-z₀)=0", explanation:"Punt i vector normal.", parts:["(A,B,C) és normal al pla."]}
+      ]
+    },
+    statistics: {
+      label: "Estadística",
+      image: "./formula-images/statistics.png",
+      items: [
+        {name:"Mitjana", formula:"x̄=Σxᵢ/n", explanation:"Valor central aritmètic.", parts:["Sumem totes les dades.","Dividim pel nombre de dades."]},
+        {name:"Mediana", formula:"valor central de les dades ordenades", explanation:"Divideix la mostra en dues meitats.", parts:["Cal ordenar les dades."]},
+        {name:"Moda", formula:"valor més freqüent", explanation:"Pot haver-hi més d'una moda.", parts:["Mira les freqüències."]},
+        {name:"Rang", formula:"R=max-min", explanation:"Mesura dispersió bàsica.", parts:["Diferència entre màxim i mínim."]},
+        {name:"Variància poblacional", formula:"σ²=Σ(xᵢ-μ)²/N", explanation:"Dispersió quadràtica mitjana.", parts:["μ és la mitjana poblacional."]},
+        {name:"Desviació típica", formula:"σ=√σ²", explanation:"Arrel de la variància.", parts:["Té les mateixes unitats que les dades."]},
+        {name:"Variància mostral", formula:"s²=Σ(xᵢ-x̄)²/(n-1)", explanation:"Estimador mostral.", parts:["Divideix per n-1."]},
+        {name:"Coeficient de variació", formula:"CV=σ/x̄", explanation:"Dispersió relativa.", parts:["Útil per comparar conjunts amb escales diferents."]},
+        {name:"Puntuació z", formula:"z=(x-μ)/σ", explanation:"Mesura quantes desviacions estàndard separen x de la mitjana.", parts:["z positiu: per sobre de la mitjana.","z negatiu: per sota."]},
+        {name:"Freqüència relativa", formula:"fᵣ=fᵢ/n", explanation:"Proporció d'una categoria.", parts:["Sovint s'expressa en percentatge."]}
+      ]
+    },
+    probability: {
+      label: "Probabilitat",
+      image: "./formula-images/probability.png",
+      items: [
+        {name:"Laplace", formula:"P(A)=casos favorables/casos possibles", explanation:"Quan tots els casos són equiprobables.", parts:["Compta casos favorables.","Compta casos totals."]},
+        {name:"Complementari", formula:"P(Aᶜ)=1-P(A)", explanation:"Probabilitat que A no passi.", parts:["A i Aᶜ cobreixen tot l'espai."]},
+        {name:"Unió", formula:"P(A∪B)=P(A)+P(B)-P(A∩B)", explanation:"Evita comptar dues vegades la intersecció.", parts:["A∩B és la part comuna."]},
+        {name:"Esdeveniments incompatibles", formula:"P(A∩B)=0", explanation:"No poden passar alhora.", parts:["Aleshores P(A∪B)=P(A)+P(B)."]},
+        {name:"Condicional", formula:"P(A|B)=P(A∩B)/P(B)", explanation:"Probabilitat d'A sabent B.", parts:["P(B) ha de ser positiva."]},
+        {name:"Independència", formula:"P(A∩B)=P(A)P(B)", explanation:"Un esdeveniment no altera l'altre.", parts:["Equivalent a P(A|B)=P(A)."]},
+        {name:"Probabilitat total", formula:"P(B)=Σ P(B|Aᵢ)P(Aᵢ)", explanation:"Quan Aᵢ formen una partició.", parts:["Casos separats i exhaustius."]},
+        {name:"Bayes", formula:"P(A|B)=P(B|A)P(A)/P(B)", explanation:"Actualitza probabilitats amb evidència.", parts:["P(A): probabilitat prèvia.","P(A|B): probabilitat posterior."]},
+        {name:"Binomial", formula:"P(X=k)=C(n,k)p^k(1-p)^(n-k)", explanation:"n assajos independents amb probabilitat p.", parts:["k èxits.","n-k fracassos."]},
+        {name:"Esperança binomial", formula:"E(X)=np", explanation:"Valor esperat d'una binomial.", parts:["n: assajos.","p: probabilitat d'èxit."]}
+      ]
+    },
+    combinatorics: {
+      label: "Combinatòria",
+      image: "./formula-images/combinatorics.png",
+      items: [
+        {name:"Factorial", formula:"n!=n(n-1)...1", explanation:"Producte dels enters positius fins a n.", parts:["0!=1."]},
+        {name:"Principi multiplicatiu", formula:"m·n", explanation:"Si hi ha m opcions i després n opcions.", parts:["Multiplica les opcions de cada etapa."]},
+        {name:"Variacions sense repetició", formula:"V(n,r)=n!/(n-r)!", explanation:"Ordre importa i no es repeteix.", parts:["Triem r elements de n."]},
+        {name:"Variacions amb repetició", formula:"VR(n,r)=n^r", explanation:"Ordre importa i es pot repetir.", parts:["Cada posició té n opcions."]},
+        {name:"Permutacions", formula:"P(n)=n!", explanation:"Ordenar tots els elements.", parts:["S'utilitzen tots els n elements."]},
+        {name:"Permutacions amb repetició", formula:"P=n!/(a!b!c!...)", explanation:"Quan hi ha elements repetits.", parts:["Divideix pels factorials de les repeticions."]},
+        {name:"Combinacions", formula:"C(n,r)=n!/[r!(n-r)!]", explanation:"Ordre no importa.", parts:["Triem grups de mida r."]},
+        {name:"Combinacions amb repetició", formula:"CR(n,r)=C(n+r-1,r)", explanation:"Ordre no importa i es pot repetir.", parts:["Útil en repartiments."]},
+        {name:"Binomi de Newton", formula:"(a+b)^n=Σ C(n,k)a^(n-k)b^k", explanation:"Generalitza els productes notables.", parts:["Coeficients combinatoris."]},
+        {name:"Triangle de Pascal", formula:"C(n,k)=C(n-1,k-1)+C(n-1,k)", explanation:"Genera coeficients binomials.", parts:["Cada nombre és suma dels dos superiors."]}
+      ]
+    },
+    "number-theory": {
+      label: "Teoria de nombres",
+      image: "./formula-images/number-theory.png",
+      items: [
+        {name:"Divisibilitat", formula:"a|b si b=ak", explanation:"a divideix b.", parts:["k és enter."]},
+        {name:"Nombre primer", formula:"p només té divisors 1 i p", explanation:"Base de la factorització.", parts:["p>1."]},
+        {name:"Factorització", formula:"n=p₁^a p₂^b ...", explanation:"Descomposició en primers.", parts:["És única excepte l'ordre."]},
+        {name:"MCD", formula:"mcd(a,b)", explanation:"Màxim divisor comú.", parts:["Es pot trobar amb Euclides."]},
+        {name:"mcm", formula:"mcm(a,b)=|ab|/mcd(a,b)", explanation:"Mínim comú múltiple.", parts:["Relacionat amb el MCD."]},
+        {name:"Algorisme d'Euclides", formula:"mcd(a,b)=mcd(b,a mod b)", explanation:"Càlcul eficient del MCD.", parts:["Repetim fins que el residu sigui 0."]},
+        {name:"Identitat de Bézout", formula:"ax+by=mcd(a,b)", explanation:"Combinació lineal del MCD.", parts:["x i y són enters."]},
+        {name:"Congruència", formula:"a≡b (mod n) si n|(a-b)", explanation:"Mateix residu en dividir per n.", parts:["n és el mòdul."]},
+        {name:"Invers modular", formula:"ax≡1 (mod n)", explanation:"Existeix si mcd(a,n)=1.", parts:["x és l'invers de a mòdul n."]},
+        {name:"Petit teorema de Fermat", formula:"a^(p-1)≡1 (mod p)", explanation:"Si p és primer i p no divideix a.", parts:["Útil en aritmètica modular."]}
+      ]
+    },
+    "complex-formulas": {
+      label: "Nombres complexos",
+      image: "./formula-images/complex-formulas.png",
+      items: [
+        {name:"Forma binòmica", formula:"z=a+bi", explanation:"a és part real i b part imaginària.", parts:["i²=-1."]},
+        {name:"Conjugat", formula:"conj(z)=a-bi", explanation:"Canvia el signe de la part imaginària.", parts:["z·conj(z)=a²+b²."]},
+        {name:"Mòdul", formula:"|z|=√(a²+b²)", explanation:"Distància a l'origen.", parts:["Pla complex."]},
+        {name:"Argument", formula:"θ=atan2(b,a)", explanation:"Angle del vector complex.", parts:["Depèn del quadrant."]},
+        {name:"Forma polar", formula:"z=r(cosθ+i sinθ)", explanation:"Radi i argument.", parts:["r=|z|."]},
+        {name:"Forma exponencial", formula:"z=re^(iθ)", explanation:"Forma d'Euler.", parts:["e^(iθ)=cosθ+i sinθ."]},
+        {name:"Producte polar", formula:"r₁r₂ cis(θ₁+θ₂)", explanation:"Multiplica mòduls i suma arguments.", parts:["cis θ=cosθ+i sinθ."]},
+        {name:"Quocient polar", formula:"(r₁/r₂) cis(θ₁-θ₂)", explanation:"Divideix mòduls i resta arguments.", parts:["r₂ no pot ser 0."]},
+        {name:"De Moivre", formula:"zⁿ=rⁿ(cos nθ+i sin nθ)", explanation:"Potències de complexos.", parts:["Multiplica l'argument per n."]},
+        {name:"Arrels n-èsimes", formula:"z_k=r^(1/n) cis((θ+2πk)/n)", explanation:"Hi ha n arrels.", parts:["k=0,1,...,n-1."]}
+      ]
+    },
+    "plane-geometry": {
+      label: "Geometria plana",
+      image: "./formula-images/plane-geometry.png",
+      items: [
+        {name:"Triangle equilàter", formula:"A=(√3/4)c²; h=(√3/2)c", explanation:"Tots els costats són iguals.", parts:["c: costat.","h: altura."]},
+        {name:"Paral·lelogram", formula:"A=b·h", explanation:"Base per altura.", parts:["h és perpendicular a la base."]},
+        {name:"Rombe", formula:"A=(D·d)/2", explanation:"Amb diagonals.", parts:["D: diagonal major.","d: diagonal menor."]},
+        {name:"Trapezi", formula:"A=((B+b)h)/2", explanation:"Mitjana de bases per altura.", parts:["B i b: bases."]},
+        {name:"Cercle", formula:"A=πr²; L=2πr", explanation:"Radi r.", parts:["L és la longitud de la circumferència."]},
+        {name:"Sector", formula:"A=(θ/360)πr²", explanation:"Part proporcional del cercle.", parts:["θ en graus."]},
+        {name:"Corona circular", formula:"A=π(R²-r²)", explanation:"Cercle gran menys cercle petit.", parts:["R exterior.","r interior."]},
+        {name:"El·lipse", formula:"A=πab", explanation:"Producte dels semieixos per π.", parts:["a i b són semieixos."]}
+      ]
+    },
+    "solid-geometry": {
+      label: "Cossos geomètrics",
+      image: "./formula-images/solid-geometry.png",
+      items: [
+        {name:"Prisma", formula:"V=A_base·h", explanation:"Volum general de qualsevol prisma.", parts:["A_base: àrea de la base.","h: altura."]},
+        {name:"Piràmide", formula:"V=A_base·h/3", explanation:"Un terç del prisma equivalent.", parts:["Mateixa base i altura que el prisma."]},
+        {name:"Cilindre", formula:"V=πr²h; S=2πr(r+h)", explanation:"Bases circulars.", parts:["r: radi.","h: altura."]},
+        {name:"Con", formula:"V=πr²h/3", explanation:"Un terç del cilindre equivalent.", parts:["r: radi.","h: altura."]},
+        {name:"Esfera", formula:"V=4πr³/3; S=4πr²", explanation:"Cos rodó.", parts:["r: radi."]},
+        {name:"Tronc de con", formula:"V=(πh/3)(R²+Rr+r²)", explanation:"Con tallat per un pla paral·lel a la base.", parts:["R: radi major.","r: radi menor.","h: altura."]}
+      ]
+    },
+    physics: {
+      label: "Física",
+      image: "./formula-images/physics.png",
+      items: [
+        {name:"MRU", formula:"v=Δx/Δt", explanation:"Velocitat constant.", parts:["Δx: desplaçament.","Δt: temps."]},
+        {name:"MRUA", formula:"v=v₀+at; x=x₀+v₀t+½at²", explanation:"Acceleració constant.", parts:["v₀: velocitat inicial.","a: acceleració."]},
+        {name:"Newton", formula:"F=ma", explanation:"Força resultant.", parts:["m: massa.","a: acceleració."]},
+        {name:"Energia", formula:"Ec=½mv²; Ep=mgh", explanation:"Energia cinètica i potencial.", parts:["v: velocitat.","h: altura."]},
+        {name:"Ohm", formula:"V=IR", explanation:"Circuit elèctric bàsic.", parts:["V: tensió.","I: intensitat.","R: resistència."]},
+        {name:"Gas ideal", formula:"PV=nRT", explanation:"Gasos.", parts:["T en kelvin."]}
+      ]
+    },
+    chemistry: {
+      label: "Química",
+      image: "./formula-images/chemistry.png",
+      items: [
+        {name:"Mols", formula:"n=m/M", explanation:"Massa i massa molar.", parts:["m: massa.","M: massa molar."]},
+        {name:"Partícules", formula:"N=n·NA", explanation:"Mols a partícules.", parts:["NA: Avogadro."]},
+        {name:"Molaritat", formula:"C=n/V", explanation:"Concentració.", parts:["V en litres."]},
+        {name:"Dilució", formula:"C₁V₁=C₂V₂", explanation:"Conservació de solut.", parts:["Inicial i final."]},
+        {name:"pH", formula:"pH=-log[H⁺]", explanation:"Acidesa.", parts:["[H⁺] en mol/L."]},
+        {name:"Gas ideal", formula:"PV=nRT", explanation:"Gasos en química.", parts:["R depèn de les unitats."]}
+      ]
+    }
+  };
+
+  function ensureFormulaCategoriesV25(){
+    const select = $("formula-category");
+    if(!select) return;
+    select.innerHTML = `
+      <option value="algebra">Àlgebra</option>
+      <option value="functions">Funcions</option>
+      <option value="trigonometry">Trigonometria</option>
+      <option value="equations">Equacions i inequacions</option>
+      <option value="analytic-geometry">Geometria analítica</option>
+      <option value="calculus">Límits, derivades i integrals</option>
+      <option value="sequences">Successions i progressions</option>
+      <option value="matrices">Matrius i sistemes</option>
+      <option value="vectors-formulas">Vectors</option>
+      <option value="statistics">Estadística</option>
+      <option value="probability">Probabilitat</option>
+      <option value="combinatorics">Combinatòria</option>
+      <option value="number-theory">Teoria de nombres</option>
+      <option value="complex-formulas">Nombres complexos</option>
+      <option value="plane-geometry">Geometria plana</option>
+      <option value="solid-geometry">Cossos geomètrics</option>
+      <option value="physics">Física</option>
+      <option value="chemistry">Química</option>
+    `;
+  }
+
+  function updateFormulaSelectV25(){
+    const catKey = $("formula-category") ? $("formula-category").value : "algebra";
+    const box = $("formula-select");
+    const cat = formulaCatalogV25[catKey];
+    if(!box || !cat) return;
+    box.innerHTML = cat.items.map((item, i) => `<option value="${i}">${item.name}</option>`).join("");
+  }
+
+  function renderFormulaV25(){
+    const catKey = $("formula-category").value;
+    const idx = Number($("formula-select").value || 0);
+    const cat = formulaCatalogV25[catKey];
+    if(!cat) throw new Error("Bloc de fórmules no disponible.");
+    const item = cat.items[idx];
+    const extra = `
+      <img class="formula-illustration" src="${cat.image}" alt="Esquema de ${cat.label}" />
+      <div class="formula-parts">
+        <strong>Components clau</strong>
+        <ul>${item.parts.map(part => `<li>${part}</li>`).join("")}</ul>
+      </div>
+    `;
+    safeRender({
+      title: `${cat.label}: ${item.name}`,
+      summary: `<span class="math">${item.formula}</span>`,
+      extra,
+      steps: [
+        item.explanation,
+        "Abans de substituir nombres, identifica cada símbol i comprova el domini o les condicions d'ús de la fórmula."
+      ]
+    });
+  }
+
+  ensureFormulaCategoriesV25();
+  updateFormulaSelectV25();
+
+  if($("formula-category")){
+    $("formula-category").addEventListener("change", function(event){
+      event.stopImmediatePropagation();
+      updateFormulaSelectV25();
+    }, true);
+    $("formula-category").onchange = updateFormulaSelectV25;
+  }
+
+  if($("formulas-form")){
+    $("formulas-form").addEventListener("submit", function(event){
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      try{
+        renderFormulaV25();
+      }catch(err){
+        safeError("No s'ha pogut mostrar la fórmula.", err.message);
+      }
+    }, true);
+  }
+})();

@@ -1,7 +1,7 @@
 {
-  "name": "Calculadora Científica Educativa v23",
+  "name": "Calculadora Científica Educativa v25",
   "short_name": "Calc Educativa",
-  "description": "PWA educativa en català amb formularis de Física i Química revisats, gràfiques robustes, taula periòdica completa i offline reforçat.",
+  "description": "PWA educativa en català amb compendi matemàtic ampliat, geometria avançada, gràfiques, física, química, taula periòdica completa i offline reforçat.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
