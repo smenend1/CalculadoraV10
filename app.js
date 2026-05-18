@@ -2683,3 +2683,260 @@ if ("serviceWorker" in navigator) {
     }, true);
   }
 })();
+
+
+/* V23: revisió global de Química i gràfiques */
+(function(){
+  "use strict";
+
+  const $v = id => document.getElementById(id);
+  const fmt = (typeof formatNumber === "function")
+    ? formatNumber
+    : (n) => Number.isFinite(n) ? Number(n).toLocaleString("ca-ES", {maximumFractionDigits: 6}) : String(n);
+
+  function asNumber(id){
+    const el = $v(id);
+    if(!el) throw new Error("Falta el camp " + id + ".");
+    const value = Number(String(el.value).replace(",", "."));
+    if(!Number.isFinite(value)) throw new Error("El camp " + id + " ha de ser numèric.");
+    return value;
+  }
+  function nz(value, name){ if(Math.abs(value) < 1e-14) throw new Error(name + " no pot ser 0."); }
+  function pos(value, name){ if(value <= 0) throw new Error(name + " ha de ser positiu."); }
+  function out(payload){
+    if(typeof render === "function") return render(payload);
+    const box = $v("result");
+    if(box) box.innerHTML = `<article class="result-card"><h3>${payload.title}</h3><p>${payload.summary}</p>${payload.extra || ""}<ol>${(payload.steps||[]).map(s=>`<li>${s}</li>`).join("")}</ol></article>`;
+  }
+  function err(title, message){
+    if(typeof renderError === "function") return renderError(title, message);
+    const box = $v("result");
+    if(box) box.innerHTML = `<article class="result-card error-message"><h3>${title}</h3><p>${message}</p></article>`;
+  }
+  function input(label, id, value, unit="", type="number"){
+    const step = type === "number" ? ` step="any"` : "";
+    return `<label>${label}${unit ? " (" + unit + ")" : ""}<input ${type === "number" ? 'type="number"' : ""} id="${id}" value="${value}"${step}></label>`;
+  }
+
+  window.chemistryTemplatesV23 = {
+    "molar-mass": input("Fórmula química","ch-formula","H2O","","text"),
+    "moles-mass": input("Massa m","ch-a",18,"g") + input("Massa molar M","ch-b",18.015,"g/mol"),
+    "mass-moles": input("Mols n","ch-a",2,"mol") + input("Massa molar M","ch-b",18.015,"g/mol"),
+    particles: input("Mols n","ch-a",1,"mol"),
+    "percent-comp": input("Fórmula química","ch-formula","H2O","","text"),
+    molarity: input("Mols n","ch-a",0.25,"mol") + input("Volum V","ch-b",0.5,"L"),
+    dilution: input("C₁","ch-a",2,"mol/L") + input("V₁","ch-b",0.1,"L") + input("V₂","ch-c",0.5,"L"),
+    "mass-percent": input("Massa de solut","ch-a",5,"g") + input("Massa de dissolució","ch-b",100,"g"),
+    "sol-density": input("Massa","ch-a",120,"g") + input("Volum","ch-b",100,"mL"),
+    "ph-h": input("[H⁺]","ch-a",0.001,"mol/L"),
+    "h-ph": input("pH","ch-a",3),
+    poh: input("pOH","ch-a",5),
+    "gas-n": input("Pressió P","ch-a",1,"atm") + input("Volum V","ch-b",22.4,"L") + input("Temperatura T","ch-c",273.15,"K"),
+    "gas-v": input("Mols n","ch-a",1,"mol") + input("Temperatura T","ch-b",273.15,"K") + input("Pressió P","ch-c",1,"atm"),
+    stoich: input("Mols A","ch-a",2,"mol") + input("Coeficient A","ch-b",2) + input("Coeficient B","ch-c",1),
+    limiting: input("Mols A","ch-a",3,"mol") + input("Mols B","ch-b",2,"mol") + input("Coeficient A","ch-c",1) + input("Coeficient B","ch-d",1)
+  };
+
+  window.updateChemistryInputs = function updateChemistryInputs(){
+    const box = $v("chemistry-inputs");
+    const selector = $v("chemistry-type");
+    if(!box || !selector) return;
+    const html = window.chemistryTemplatesV23[selector.value];
+    box.innerHTML = html || `<div class="warning-box">Aquest apartat de química no té camps configurats.</div>`;
+  };
+
+  const V23_AT = {H:1.008, He:4.0026, Li:6.94, Be:9.0122, B:10.81, C:12.011, N:14.007, O:15.999, F:18.998, Ne:20.18, Na:22.99, Mg:24.305, Al:26.982, Si:28.085, P:30.974, S:32.06, Cl:35.45, Ar:39.948, K:39.0983, Ca:40.078, Sc:44.956, Ti:47.867, V:50.942, Cr:51.996, Mn:54.938, Fe:55.845, Co:58.933, Ni:58.693, Cu:63.546, Zn:65.38, Ga:69.723, Ge:72.63, As:74.922, Se:78.971, Br:79.904, Kr:83.798, Rb:85.468, Sr:87.62, Y:88.906, Zr:91.224, Nb:92.906, Mo:95.95, Tc:98, Ru:101.07, Rh:102.91, Pd:106.42, Ag:107.87, Cd:112.41, In:114.82, Sn:118.71, Sb:121.76, Te:127.6, I:126.9, Xe:131.29, Cs:132.91, Ba:137.33, La:138.91, Ce:140.12, Pr:140.91, Nd:144.24, Pm:145, Sm:150.36, Eu:151.96, Gd:157.25, Tb:158.93, Dy:162.5, Ho:164.93, Er:167.26, Tm:168.93, Yb:173.05, Lu:174.97, Hf:178.49, Ta:180.95, W:183.84, Re:186.21, Os:190.23, Ir:192.22, Pt:195.08, Au:196.97, Hg:200.59, Tl:204.38, Pb:207.2, Bi:208.98, Po:209, At:210, Rn:222, Fr:223, Ra:226, Ac:227, Th:232.04, Pa:231.04, U:238.03, Np:237, Pu:244, Am:243, Cm:247, Bk:247, Cf:251, Es:252, Fm:257, Md:258, No:259, Lr:266, Rf:267, Db:268, Sg:269, Bh:270, Hs:269, Mt:278, Ds:281, Rg:282, Cn:285, Nh:286, Fl:289, Mc:290, Lv:293, Ts:294, Og:294};
+
+  function parseFormulaV23(formula){
+    let i = 0;
+    formula = formula.trim();
+    if(!formula) throw new Error("Cal escriure una fórmula química.");
+    function readNumber(){
+      let s = "";
+      while(i < formula.length && /[0-9]/.test(formula[i])) s += formula[i++];
+      return s ? Number(s) : 1;
+    }
+    function readGroup(){
+      const counts = {};
+      while(i < formula.length){
+        const ch = formula[i];
+        if(ch === "("){
+          i++;
+          const inner = readGroup();
+          if(formula[i] !== ")") throw new Error("Parèntesi no tancat.");
+          i++;
+          const mult = readNumber();
+          for(const [el, n] of Object.entries(inner)) counts[el] = (counts[el] || 0) + n * mult;
+        } else if(ch === ")"){
+          break;
+        } else if(/[A-Z]/.test(ch)){
+          let el = formula[i++];
+          if(i < formula.length && /[a-z]/.test(formula[i])) el += formula[i++];
+          if(!V23_AT[el]) throw new Error("Element no disponible o símbol incorrecte: " + el);
+          const mult = readNumber();
+          counts[el] = (counts[el] || 0) + mult;
+        } else {
+          throw new Error("Fórmula no vàlida prop de: " + ch);
+        }
+      }
+      return counts;
+    }
+    const result = readGroup();
+    if(i !== formula.length) throw new Error("Fórmula no vàlida.");
+    return result;
+  }
+  function molarMassV23(counts){
+    return Object.entries(counts).reduce((sum, [el, n]) => sum + V23_AT[el] * n, 0);
+  }
+  function countsText(counts){
+    return Object.entries(counts).map(([el,n]) => `${el}: ${n}`).join(", ");
+  }
+
+  function calcChemistry(type){
+    const R = 0.082057;
+    const NA = 6.022e23;
+    let title = "Química", summary = "", steps = [], extra = "";
+
+    if(type === "molar-mass" || type === "percent-comp"){
+      const formula = $v("ch-formula").value.trim();
+      const counts = parseFormulaV23(formula);
+      const M = molarMassV23(counts);
+      if(type === "molar-mass"){
+        title = "Massa molar";
+        summary = `M(${formula}) = <strong>${fmt(M)} g/mol</strong>`;
+        steps = [`Interpretem la fórmula: <span class="math">${countsText(counts)}</span>.`, "Multipliquem cada element per la seva massa atòmica.", `Sumem i obtenim <span class="math">${fmt(M)} g/mol</span>.`];
+        extra = `<div class="v23-note">Taula periòdica completa amb masses atòmiques escolars aproximades.</div>`;
+      } else {
+        const parts = Object.entries(counts).map(([el,n]) => `${el}: ${fmt(V23_AT[el] * n / M * 100)}%`);
+        title = "Composició percentual";
+        summary = `<strong>${parts.join(" · ")}</strong>`;
+        steps = [`Massa molar total: ${fmt(M)} g/mol.`, "Per cada element: massa de l'element / massa total · 100.", `Resultat: ${parts.join("; ")}.`];
+      }
+    }
+    else if(type === "moles-mass"){ const m=asNumber("ch-a"), M=asNumber("ch-b"); nz(M,"La massa molar"); const n=m/M; title="Mols"; summary=`n = <strong>${fmt(n)} mol</strong>`; steps=[`n = m/M = ${fmt(m)}/${fmt(M)}`]; }
+    else if(type === "mass-moles"){ const n=asNumber("ch-a"), M=asNumber("ch-b"); const m=n*M; title="Massa"; summary=`m = <strong>${fmt(m)} g</strong>`; steps=[`m = nM`]; }
+    else if(type === "particles"){ const n=asNumber("ch-a"); const N=n*NA; title="Nombre de partícules"; summary=`N = <strong>${fmt(N)}</strong>`; steps=[`N = n·NA`, `NA = 6,022·10²³`]; }
+    else if(type === "molarity"){ const n=asNumber("ch-a"), V=asNumber("ch-b"); nz(V,"El volum"); const C=n/V; title="Molaritat"; summary=`C = <strong>${fmt(C)} mol/L</strong>`; steps=[`C = n/V`]; }
+    else if(type === "dilution"){ const C1=asNumber("ch-a"), V1=asNumber("ch-b"), V2=asNumber("ch-c"); nz(V2,"El volum final"); const C2=C1*V1/V2; title="Dilució"; summary=`C₂ = <strong>${fmt(C2)} mol/L</strong>`; steps=[`C₁V₁ = C₂V₂`, `C₂ = C₁V₁/V₂`]; }
+    else if(type === "mass-percent"){ const ms=asNumber("ch-a"), md=asNumber("ch-b"); nz(md,"La massa de dissolució"); const p=ms/md*100; title="% en massa"; summary=`<strong>${fmt(p)}%</strong>`; steps=[`% = massa solut / massa dissolució · 100`]; }
+    else if(type === "sol-density"){ const m=asNumber("ch-a"), V=asNumber("ch-b"); nz(V,"El volum"); const rho=m/V; title="Densitat de dissolució"; summary=`ρ = <strong>${fmt(rho)} g/mL</strong>`; steps=[`ρ = m/V`]; }
+    else if(type === "ph-h"){ const H=asNumber("ch-a"); pos(H,"[H⁺]"); const pH=-Math.log10(H); title="pH"; summary=`pH = <strong>${fmt(pH)}</strong>`; steps=[`pH = -log[H⁺]`]; }
+    else if(type === "h-ph"){ const pH=asNumber("ch-a"); const H=10**(-pH); title="[H⁺]"; summary=`[H⁺] = <strong>${fmt(H)} mol/L</strong>`; steps=[`[H⁺] = 10^(-pH)`]; }
+    else if(type === "poh"){ const pOH=asNumber("ch-a"); const pH=14-pOH; title="pOH i pH"; summary=`pH = <strong>${fmt(pH)}</strong>`; steps=[`A 25 °C: pH + pOH = 14`]; }
+    else if(type === "gas-n"){ const P=asNumber("ch-a"), V=asNumber("ch-b"), T=asNumber("ch-c"); nz(T,"La temperatura"); const n=P*V/(R*T); title="Gas ideal"; summary=`n = <strong>${fmt(n)} mol</strong>`; steps=[`PV = nRT`, `n = PV/RT`]; }
+    else if(type === "gas-v"){ const n=asNumber("ch-a"), T=asNumber("ch-b"), P=asNumber("ch-c"); nz(P,"La pressió"); const V=n*R*T/P; title="Gas ideal"; summary=`V = <strong>${fmt(V)} L</strong>`; steps=[`PV = nRT`, `V = nRT/P`]; }
+    else if(type === "stoich"){ const nA=asNumber("ch-a"), coefA=asNumber("ch-b"), coefB=asNumber("ch-c"); nz(coefA,"El coeficient A"); const nB=nA*coefB/coefA; title="Estequiometria"; summary=`Mols B = <strong>${fmt(nB)} mol</strong>`; steps=[`nB/nA = coefB/coefA`]; }
+    else if(type === "limiting"){ const nA=asNumber("ch-a"), nB=asNumber("ch-b"), coefA=asNumber("ch-c"), coefB=asNumber("ch-d"); pos(coefA,"El coeficient A"); pos(coefB,"El coeficient B"); const ra=nA/coefA, rb=nB/coefB; const lim = Math.abs(ra-rb)<1e-12 ? "proporció exacta" : (ra<rb ? "A" : "B"); title="Reactiu limitant"; summary=`Limitant: <strong>${lim}</strong>`; steps=[`Comparem mols/coeficient.`, `A: ${fmt(ra)}; B: ${fmt(rb)}.`]; }
+    else {
+      throw new Error("Apartat de química no reconegut: " + type);
+    }
+    return {title, summary, steps, extra};
+  }
+
+  const chemForm = $v("chemistry-form");
+  if(chemForm){
+    $v("chemistry-type")?.addEventListener("change", window.updateChemistryInputs);
+    chemForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      try { out(calcChemistry($v("chemistry-type").value)); }
+      catch(e) { err("No s'ha pogut calcular l'apartat de química.", e.message); }
+    }, true);
+    window.updateChemistryInputs();
+  }
+
+  function canvasSeries(canvas, series, scale){
+    if(!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const size = Math.max(320, Math.round(rect.width || 720));
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = size*dpr; canvas.height = size*dpr; canvas.style.height = size + "px";
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    const W=size,H=size,pad=Math.max(34,Math.round(size*0.07));
+    const safeScale = Math.max(1, Number(scale)||10);
+    const min=-safeScale,max=safeScale;
+    const X=x=>pad+(x-min)/(max-min)*(W-2*pad);
+    const Y=y=>H-pad-(y-min)/(max-min)*(H-2*pad);
+    ctx.fillStyle="#fff";ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle="#e5e7eb";ctx.lineWidth=1;
+    for(let i=Math.ceil(min);i<=Math.floor(max);i++){ctx.beginPath();ctx.moveTo(X(i),pad);ctx.lineTo(X(i),H-pad);ctx.stroke();ctx.beginPath();ctx.moveTo(pad,Y(i));ctx.lineTo(W-pad,Y(i));ctx.stroke();}
+    ctx.strokeStyle="#374151";ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(X(0),pad);ctx.lineTo(X(0),H-pad);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(pad,Y(0));ctx.lineTo(W-pad,Y(0));ctx.stroke();
+    const colors=["#1d4ed8","#b91c1c","#047857","#7c3aed","#b45309","#0f766e","#db2777","#111827"];
+    series.forEach((s,idx)=>{
+      ctx.strokeStyle=colors[idx%colors.length];ctx.lineWidth=3;ctx.beginPath();
+      let started=false;
+      (s.points||[]).forEach(p=>{
+        if(!Number.isFinite(p.x)||!Number.isFinite(p.y)){started=false;return;}
+        const cx=X(p.x), cy=Y(p.y);
+        if(!started){ctx.moveTo(cx,cy);started=true;} else ctx.lineTo(cx,cy);
+      });
+      ctx.stroke();
+    });
+  }
+  function renderGraph({title, summary, legend="", series, scale=10, steps=[]}){
+    const id = "v23-graph-" + Math.random().toString(36).slice(2);
+    out({title, summary, steps, extra:`${legend}<div class="v23-canvas-wrap"><canvas id="${id}"></canvas></div>`});
+    requestAnimationFrame(()=>canvasSeries($v(id), series, scale));
+  }
+  function evalExpr(expr, vars={}, mode="rad"){
+    if(typeof v15Eval === "function") return v15Eval(expr, vars, mode);
+    const names = Object.keys(vars), vals = Object.values(vars);
+    const scope = {pi:Math.PI,e:Math.E,sin:Math.sin,cos:Math.cos,tan:Math.tan,sqrt:Math.sqrt,abs:Math.abs,log:Math.log10,ln:Math.log,exp:Math.exp};
+    const js = expr.replace(/\^/g,"**").replace(/π/g,"pi");
+    return new Function(...names,...Object.keys(scope),`return (${js})`)(...vals,...Object.values(scope));
+  }
+
+  const polarForm = $v("polar-form");
+  if(polarForm){
+    polarForm.addEventListener("submit", (event)=>{
+      event.preventDefault(); event.stopImmediatePropagation();
+      try{
+        const expr=$v("polar-expression").value;
+        const tmin=asNumber("polar-tmin"), tmax=asNumber("polar-tmax"), scale=asNumber("polar-scale");
+        const mode=$v("polar-angle-mode").value;
+        if(tmax<=tmin) throw new Error("t màx ha de ser més gran que t mín.");
+        const pts=[];
+        for(let i=0;i<=900;i++){ const t=tmin+(tmax-tmin)*i/900; const r=evalExpr(expr,{t},mode); const a=mode==="deg"?t*Math.PI/180:t; pts.push({x:r*Math.cos(a),y:r*Math.sin(a)}); }
+        renderGraph({title:"Gràfica polar",summary:`r(t)=<strong>${expr}</strong>`,series:[{label:expr,points:pts}],scale,steps:["Convertim coordenades polars a cartesianes: x=r cos(t), y=r sin(t).","El canvas es pinta després del render perquè sigui visible."]});
+      }catch(e){ err("No s'ha pogut dibuixar la gràfica polar.",e.message); }
+    }, true);
+  }
+
+  const paramForm = $v("parametric-form");
+  if(paramForm){
+    paramForm.addEventListener("submit", (event)=>{
+      event.preventDefault(); event.stopImmediatePropagation();
+      try{
+        const ex=$v("param-x").value, ey=$v("param-y").value;
+        const tmin=asNumber("param-tmin"), tmax=asNumber("param-tmax"), scale=asNumber("param-scale");
+        const mode=$v("param-angle-mode").value;
+        if(tmax<=tmin) throw new Error("t màx ha de ser més gran que t mín.");
+        const pts=[];
+        for(let i=0;i<=900;i++){ const t=tmin+(tmax-tmin)*i/900; pts.push({x:evalExpr(ex,{t},mode),y:evalExpr(ey,{t},mode)}); }
+        renderGraph({title:"Gràfica paramètrica",summary:`x(t)=<strong>${ex}</strong>, y(t)=<strong>${ey}</strong>`,series:[{label:ex+";"+ey,points:pts}],scale,steps:["Cada valor de t genera un punt (x(t), y(t)).","Unim els punts per ordre creixent de t."]});
+      }catch(e){ err("No s'ha pogut dibuixar la gràfica paramètrica.",e.message); }
+    }, true);
+  }
+
+  const complexPlus = $v("complex-plus-form");
+  if(complexPlus){
+    complexPlus.addEventListener("submit", (event)=>{
+      event.preventDefault(); event.stopImmediatePropagation();
+      try{
+        const re=asNumber("cx-re"), im=asNumber("cx-im"), n=Math.trunc(asNumber("cx-n"));
+        const op=$v("cx-op").value;
+        const r=Math.hypot(re,im), theta=Math.atan2(im,re);
+        let pts=[], summary="", title="Pla complex";
+        if(op==="power"){ const mag=r**n, ang=theta*n; const z={re:mag*Math.cos(ang),im:mag*Math.sin(ang)}; pts=[{x:re,y:im},{x:z.re,y:z.im}]; title="Potència complexa"; summary=`Resultat: <strong>${fmt(z.re)} ${z.im>=0?"+":"-"} ${fmt(Math.abs(z.im))}i</strong>`; }
+        else if(op==="roots"){ for(let k=0;k<n;k++){ const mag=r**(1/n), ang=(theta+2*Math.PI*k)/n; pts.push({x:mag*Math.cos(ang),y:mag*Math.sin(ang)}); } title="Arrels n-èsimes"; summary=`S'han calculat <strong>${pts.length}</strong> arrels.`; }
+        else { pts=[{x:re,y:im}]; summary=`z = <strong>${fmt(re)} ${im>=0?"+":"-"} ${fmt(Math.abs(im))}i</strong>`; }
+        const scale=Math.max(5,...pts.map(p=>Math.hypot(p.x,p.y)))+1;
+        const legend=`<ul class="multi-legend">${pts.map((p,i)=>`<li>P${i+1}=(${fmt(p.x)}, ${fmt(p.y)})</li>`).join("")}</ul>`;
+        renderGraph({title,summary,legend,series:[{label:"complexos",points:pts}],scale,steps:["La part real es representa a l'eix x.","La part imaginària es representa a l'eix y."]});
+      }catch(e){ err("No s'ha pogut representar el complex.",e.message); }
+    }, true);
+  }
+})();
