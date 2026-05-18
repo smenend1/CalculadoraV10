@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "calculadora-educativa-plus-v25";
+const CACHE_NAME = "calculadora-educativa-plus-v26";
 const APP_SHELL = [
   "./",
   "./index.html",
